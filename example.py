@@ -1,78 +1,78 @@
 import numpy as np
-from engine import Engine, Module
+from engine import Engine, Module, EngineMode
 from modules import ConfigParser
 
 import argparse
 
+
 class TerminateAfter(Module):
-  def __init__(self, count):
-    self.name = "TerminateAfter"
-    self.counter = count
-    self.count = 0
-    pass
+    def __init__(self, count):
+        self.name = "TerminateAfter"
+        self.counter = count
+        self.count = 0
+        pass
 
-  def start(self, data):
-    self.count = 0
-    pass
+    def start(self, data):
+        self.count = 0
+        pass
 
-  def step(self, data):
-    self.count += 1
-    if self.count >= self.counter:
-      return { "terminate": True }
+    def step(self, data):
+        self.count += 1
+        if self.count >= self.counter:
+            return { }, EngineMode.TERMINATE
 
-    return { }
+        return { }
 
-  def stop(self, data):
-    pass
+    def stop(self, data):
+        pass
 
 
 class Sender(Module):
-  def __init__(self, signal):
-    self.name = f"Sender ({signal})"
-    self.signal = signal
-    self.value = 0
-    pass
+    def __init__(self, signal):
+        self.name = f"Sender ({signal})"
+        self.signal = signal
+        self.value = 0
+        pass
 
-  def start(self, data):
-    pass
+    def start(self, data):
+        pass
 
-  def step(self, data):
-    self.value += 1
-    result = {
-      self.signal: self.value
-    }
+    def step(self, data):
+        self.value += 1
+        result = { self.signal: self.value }
 
-    return result
+        return result
 
-  def stop(self, data):
-    pass
+    def stop(self, data):
+        pass
+
 
 class Receiver(Module):
-  def __init__(self):
-    self.name = f"Receiver"
-    pass
+    def __init__(self):
+        self.name = f"Receiver"
+        pass
 
-  def start(self, data):
-    pass
+    def start(self, data):
+        pass
 
-  def step(self, data):
-    print(data["config"])
-    return {}
+    def step(self, data):
+        print(data)
+        return {}
 
-  def stop(self, data):
-    pass
+    def stop(self, data):
+        pass
+
 
 parser = argparse.ArgumentParser("Example Program")
 parser.add_argument("--mode", action="store", default="replay", required=True)
 parser.add_argument("--video.width", required=False)
 modules = [
-  ConfigParser(parser),
-  TerminateAfter(3),
-  Sender("A"),
-  Sender("B"),
-  Receiver()
+    ConfigParser(parser),
+    TerminateAfter(5),
+    Sender("A"),
+    Sender("B"),
+    Receiver(),
 ]
-
 
 
 engine = Engine(modules=modules, signals={})

@@ -1,71 +1,82 @@
+from enum import Enum
+
+class EngineMode(Enum):
+    RUN = 1,
+    TERMINATE = 2
+
 class Engine:
-  def __init__(self, modules, signals):
-    self.modules = modules
-    self.signals = signals
-    pass
+    def __init__(self, modules, signals):
+        self.modules = modules
+        self.signals = signals
 
-  def run(self, data):
-    # Init all module
-    for module in self.modules:
-      module.start(data)
+        pass
 
-    # Run till termination
-    while True:
-      data = self.step(data)
+    def run(self, data):
+        # Init all module
+        for module in self.modules:
+            module.start(data)
 
-      if "terminate" in data and data["terminate"] == True:
-        break
+        # Run till termination
+        while True:
+            data, mode = self.step(data)
 
-    # Shutdown all module
-    for module in self.modules:
-      module.stop(data)
+            if mode == EngineMode.TERMINATE:
+                break
 
-    return data
+        # Shutdown all module
+        for module in self.modules:
+            module.stop(data)
 
-  def step(self, data):
-    stopped = False
-
-    # Iterate all modules
-    for module in self.modules:
-      # Check if we shall terminate
-      if "terminate" in data and data["terminate"] == True:
-        print("Terminate on request")
         return data
 
-      # Call the module
-      call = False
-      if "stopped" not in data:
-        call = True
+    def step(self, data):
+        # Iterate all modules
+        for module in self.modules:
+            # Run a single step of the module
+            results = module.step(data)
 
-      if "stopped" in data and data["stopped"] == False:
-        call = True
+            # If we received a tuple, unpack it first. OLtherwise we have just received results (for convenience)
+            if type(results) is tuple:
+                results, mode = results
+            else:
+                mode = EngineMode.RUN
 
-      if module.name == "Display":
-        call = True
-      
-      if call:
-        results = module.step(data)
-      else:
-        continue
-      
-      assert type(results) is dict, "Module " + module.name + " must return a dictionary!"
-      # Verify results
-      for signal, value in results.items():
-        if signal in self.signals:
-          verifier = self.signals[signal]
-          if type(verifier) is type:
-            if type(results[signal]) is not verifier:
-              print("Cannot verify result of module", module.name, "on signal", signal)
-              print("Expected type", verifier,"on signal", signal)
+            # Verify its result
+            # TODO: Use JSON Schema validation here
+            assert type(results) is dict, (
+                "Module " + module.name + " must return a dictionary!"
+            )
 
-          try:
-            verifier(results[signal])
-          except AssertionError as e:
-            print("Cannot verify result of module", module.name, "on signal", signal)
-            print(e)
-            exit()
+            # Verify results
+            for signal, value in results.items():
+                # if signal in self.signals:
+                #     verifier = self.signals[signal]
+                #     if type(verifier) is type:
+                #         if type(results[signal]) is not verifier:
+                #             print(
+                #                 "Cannot verify result of module",
+                #                 module.name,
+                #                 "on signal",
+                #                 signal,
+                #             )
+                #             print("Expected type", verifier, "on signal", signal)
 
-        data[signal] = results[signal]
+                #     try:
+                #         verifier(results[signal])
+                #     except AssertionError as e:
+                #         print(
+                #             "Cannot verify result of module",
+                #             module.name,
+                #             "on signal",
+                #             signal,
+                #         )
+                #         print(e)
+                #         exit()
 
-    return data
-      
+                data[signal] = results[signal]
+
+            # If the module requests termination, stop immediately
+            if mode == EngineMode.TERMINATE:
+              return data, EngineMode.TERMINATE
+
+        return data, EngineMode.RUN

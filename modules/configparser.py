@@ -1,59 +1,66 @@
 import argparse
 import yaml
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 def set_nested_key(key, value, dict):
-  while True:
-    splt = key.split('.')
-    if len(splt) == 1:
-      dict[key] = value
-      return
-    
-    dict = dict[splt[0]]
-    key = ".".join(splt[1:])
+    while True:
+        splt = key.split(".")
+        if len(splt) == 1:
+            dict[key] = value
+            return
 
-class ConfigParser():
-  def __init__(self, argumentParser = None):
-    self.name = "Argument Parser"
-    self.parser = argumentParser or argparse.ArgumentParser()
-    self.parser.add_argument("--cfg", action="store", help="Config file to parse", default="config.yml")
-    self.config = None
-    pass
+        if splt[0] not in dict:
+            dict[splt[0]] = {}  # Initialisiere das Dictionary, falls nicht vorhanden
 
-  def start(self, data):
-    # Start with an empty namespace
-    self.config = { "config": argparse.Namespace() }
+        dict = dict[splt[0]]
+        key = ".".join(splt[1:])
 
-    # Parse command line arguments into it, just to get the config file
-    self.parser.parse_args(namespace=self.config["config"])
 
-    cfgFile = self.config["config"].cfg
-    if not os.path.exists(cfgFile):
-      if cfgFile != "config.yml":
-        print(f"Could not file configuration file {cfgFile}")
-        exit()
-    else:
-      with open(cfgFile) as f:
-        try:
-          cfg = yaml.safe_load(f)
-          self.config = { "config": argparse.Namespace(**cfg) }
-        except yaml.YAMLError as exc:
-          print(exc)
-          exit()
+class ConfigParser:
+    def __init__(self, argumentParser=None):
+        self.name = "Argument Parser"
+        self.parser = argumentParser or argparse.ArgumentParser()
+        self.parser.add_argument(
+            "--cfg", action="store", help="Config file to parse", default="config.yml"
+        )
+        self.config = None
+        pass
 
-    # Parse command line arguments again to (potentially) overwrite the parameters from the configuration file
-    args = vars(self.parser.parse_args())
-    dct = vars(self.config["config"])
-    for key, value in args.items():
-      if value is None:
-        continue
-      
-      set_nested_key(key, value, dct)
-    
-    self.config["config"] = argparse.Namespace(**dct)
+    def start(self, data):
+        # Parse command line arguments into it, just to get the config file
+        namespace = self.parser.parse_args()
+        self.config = { "config" : {} }
+        # Get the config file
+        cfgFile = namespace.cfg
+        if not os.path.exists(cfgFile):
+          if cfgFile != "config.yml":
+                #logger.error(f"Could not find configuration file {cfgFile}")
+                raise FileNotFoundError()
+        else:
+            with open(cfgFile, "r") as f:
+                try:
+                    cfg = yaml.safe_load(f)
+                    self.config = { "config": cfg }
+                except yaml.YAMLError as exc:
+                    #logger.error(f"Cannot load configuration file: {exc}")
+                    raise exc
 
-  def step(self, data):
-    return self.config
+        # Parse command line arguments again to (potentially) overwrite the parameters from the configuration file
+        args = vars(self.parser.parse_args())
+        dct = self.config["config"]
+        for key, value in args.items():
+            if value is None:
+                continue
 
-  def stop(self, data):
-    pass
+            set_nested_key(key, value, dct)
+
+    def step(self, data):
+        return self.config
+
+    def stop(self, data):
+        pass

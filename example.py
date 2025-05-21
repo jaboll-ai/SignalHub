@@ -1,5 +1,8 @@
 import numpy as np
 from engine import Engine, Module
+from modules import ConfigParser
+
+import argparse
 
 class TerminateAfter(Module):
   def __init__(self, count):
@@ -53,18 +56,24 @@ class Receiver(Module):
     pass
 
   def step(self, data):
-    print(data)
+    print(data["config"])
     return {}
 
   def stop(self, data):
     pass
 
+parser = argparse.ArgumentParser("Example Program")
+parser.add_argument("--mode", action="store", default="replay", required=True)
+parser.add_argument("--video.width", required=False)
 modules = [
-  TerminateAfter(100),
+  ConfigParser(parser),
+  TerminateAfter(3),
   Sender("A"),
   Sender("B"),
   Receiver()
 ]
+
+
 
 engine = Engine(modules=modules, signals={})
 signals = engine.run({})

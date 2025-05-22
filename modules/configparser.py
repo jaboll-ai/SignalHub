@@ -2,6 +2,7 @@ import argparse
 import yaml
 import os
 import logging
+from engine import Module
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,8 +22,17 @@ def set_nested_key(key, value, dict):
         key = ".".join(splt[1:])
 
 
-class ConfigParser:
+class ConfigParser(Module):
     def __init__(self, argumentParser=None):
+        super().__init__(outputSchema={
+            "type": "object",
+            "properties":{
+                "config": {
+                    "type": dict
+                }
+            },
+        })
+
         self.name = "Argument Parser"
         self.parser = argumentParser or argparse.ArgumentParser()
         self.parser.add_argument(

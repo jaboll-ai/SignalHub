@@ -28,18 +28,48 @@ class Engine:
             module.stop(data)
 
         return data
+    
+    def _strip_down_input_signal(self, data, inputSignals):
+        stripped_data = {}
+
+        if not inputSignals:
+            return
+        
+        for key in inputSignals:
+            keys = key.split('.')  # Split the key by dot to handle nested keys
+            current_data = data
+
+            # Traverse the nested keys
+            for sub_key in keys:
+                if sub_key in current_data:
+                    current_data = current_data[sub_key]
+                else:
+                    # If a nested key does not exist, return None or handle error
+                    current_data = None
+                    break
+            
+            stripped_data[key] = current_data
+
+        return stripped_data
 
     def step(self, data):
         # Iterate all modules
         for module in self.modules:
-            # Run a single step of the module
-            results = module.step(data)
+            # Only present the requested data to this module
+            stripped_data = self._strip_down_input_signal(data, module.inputSignals)
 
-            # If we received a tuple, unpack it first. OLtherwise we have just received results (for convenience)
+            # Run a single step of the module
+            results = module.step(stripped_data)
+
+            # If we received a tuple, unpack it first. Otherwise we have just received results (for convenience)
             if type(results) is tuple:
                 results, mode = results
             else:
                 mode = EngineMode.RUN
+
+            # Validate module output with module output schema (only if we are supposed to run)
+            if mode ==  EngineMode.RUN:
+              module.outputValidator.validate(results)
 
             # Verify its result
             # TODO: Use JSON Schema validation here
@@ -47,33 +77,10 @@ class Engine:
                 "Module " + module.name + " must return a dictionary!"
             )
 
-            # Verify results
-            for signal, value in results.items():
-                # if signal in self.signals:
-                #     verifier = self.signals[signal]
-                #     if type(verifier) is type:
-                #         if type(results[signal]) is not verifier:
-                #             print(
-                #                 "Cannot verify result of module",
-                #                 module.name,
-                #                 "on signal",
-                #                 signal,
-                #             )
-                #             print("Expected type", verifier, "on signal", signal)
+            # Update the dictionary
+            data.update(results)
 
-                #     try:
-                #         verifier(results[signal])
-                #     except AssertionError as e:
-                #         print(
-                #             "Cannot verify result of module",
-                #             module.name,
-                #             "on signal",
-                #             signal,
-                #         )
-                #         print(e)
-                #         exit()
-
-                data[signal] = results[signal]
+            
 
             # If the module requests termination, stop immediately
             if mode == EngineMode.TERMINATE:

@@ -7,6 +7,7 @@ import argparse
 
 class TerminateAfter(Module):
     def __init__(self, count):
+        super().__init__()
         self.name = "TerminateAfter"
         self.counter = count
         self.count = 0
@@ -29,6 +30,14 @@ class TerminateAfter(Module):
 
 class Sender(Module):
     def __init__(self, signal):
+        super().__init__(outputSchema={
+            "type": "object",
+            "properties" : {
+                signal : { "type": "integer" }
+            },
+            "required": [signal]
+        })
+
         self.name = f"Sender ({signal})"
         self.signal = signal
         self.value = 0
@@ -49,6 +58,7 @@ class Sender(Module):
 
 class Receiver(Module):
     def __init__(self):
+        super().__init__(inputSignals=["A", "B", "config.video.width", "other"])
         self.name = f"Receiver"
         pass
 
@@ -57,7 +67,7 @@ class Receiver(Module):
 
     def step(self, data):
         print(data)
-        return {}
+        return { "other": "passed" }
 
     def stop(self, data):
         pass

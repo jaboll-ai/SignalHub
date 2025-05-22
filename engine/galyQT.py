@@ -1,11 +1,18 @@
 import sys
+import logging
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QAction, QFileDialog
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QIcon
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import Qt, QTimer
 import cv2
 import numpy as np
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+ICON_NONCHECKED = None
+ICON_CHECKED = "icons/healthy.png"
 
 class MainWindow(QMainWindow):
     def __init__(self, engineStepCallback):
@@ -59,15 +66,41 @@ class MainWindow(QMainWindow):
         # Canvas menu
         self.canvas_menu = menubar.addMenu("Canvas")
 
+        self.canvas_visibility = {}
+
+    def display_canvas(self, name, image):
+        if name not in self.canvas_visibility:
+            logger.critical(f"GALY: Unknown canvas to display: {name}")
+            exit()
+
+        if not self.canvas_visibility[name]:
+            return
+        
+        cv2.imshow(name, image)
+
     def on_canvas_toggle(self):
         action = self.sender()  # Get the QAction that triggered the handler
         context = action.data()  # Retrieve the context data
+
         canvasName = context["canvasName"]
-        
+
+        if action.isChecked():  # If the action is checked (active)
+            cv2.namedWindow(canvasName)
+            action.setIcon(QIcon(ICON_CHECKED))
+            self.canvas_visibility[canvasName] = True
+        else:
+            cv2.destroyWindow(canvasName)
+            action.setIcon(QIcon(ICON_NONCHECKED))
+            self.canvas_visibility[canvasName] = False
 
     def add_canvas_entry(self, name):
         canvas_action = QAction(name, self)
         canvas_action.setData({"canvasName": name})
+        canvas_action.setCheckable(True)
+        self.canvas_visibility[name] = True
+        canvas_action.setChecked(True)
+        canvas_action.setIcon(QIcon(ICON_CHECKED))
+
         canvas_action.triggered.connect(self.on_canvas_toggle)
         self.canvas_menu.addAction(canvas_action)
 
@@ -97,6 +130,9 @@ class MainWindow(QMainWindow):
         self.setFixedSize(self.size())  # Lock the window size to the current size
 
 app, window = None, None
+
+def qt_display_canvas(name, image):
+    window.display_canvas(name, image)
 
 def qt_add_canvas_entry(name):
     window.add_canvas_entry(name)

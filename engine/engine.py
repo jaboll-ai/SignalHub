@@ -1,4 +1,5 @@
 from enum import Enum
+from .galy import process_galy
 
 class EngineMode(Enum):
     RUN = 1,
@@ -22,6 +23,8 @@ class Engine:
 
             if mode == EngineMode.TERMINATE:
                 break
+
+            data = process_galy(data)
 
         # Shutdown all module
         for module in self.modules:

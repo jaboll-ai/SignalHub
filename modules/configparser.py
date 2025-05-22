@@ -4,6 +4,7 @@ import os
 from engine import Module
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -24,12 +25,12 @@ def set_nested_key(key, value, dict):
 
 class ConfigParser(Module):
     def __init__(self, argumentParser=None):
-        super().__init__(outputSchema={
-            "type": "object",
-            "properties":{
-                "config": { }
-            },
-        })
+        super().__init__(
+            outputSchema={
+                "type": "object",
+                "properties": {"config": {}},
+            }
+        )
 
         self.name = "Argument Parser"
         self.parser = argumentParser or argparse.ArgumentParser()
@@ -42,20 +43,20 @@ class ConfigParser(Module):
     def start(self, data):
         # Parse command line arguments into it, just to get the config file
         namespace = self.parser.parse_args()
-        self.config = { "config" : {} }
+        self.config = {"config": {}}
         # Get the config file
         cfgFile = namespace.cfg
         if not os.path.exists(cfgFile):
-          if cfgFile != "config.yml":
-                #logger.error(f"Could not find configuration file {cfgFile}")
+            if cfgFile != "config.yml":
+                # logger.error(f"Could not find configuration file {cfgFile}")
                 raise FileNotFoundError()
         else:
             with open(cfgFile, "r") as f:
                 try:
                     cfg = yaml.safe_load(f)
-                    self.config = { "config": cfg }
+                    self.config = {"config": cfg}
                 except yaml.YAMLError as exc:
-                    #logger.error(f"Cannot load configuration file: {exc}")
+                    # logger.error(f"Cannot load configuration file: {exc}")
                     raise exc
 
         # Parse command line arguments again to (potentially) overwrite the parameters from the configuration file

@@ -1,3 +1,5 @@
-video:
-  width: 1024
-  height: 768
+webcam:
+  deviceIndex: 0
+  width: 640
+  height: 480
+  dtype: float32

@@ -1,13 +1,17 @@
 from enum import Enum
 from .galy import process_galy, remove_galy_streams
+from .misc import get_nested_key
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class EngineMode(Enum):
-    RUN = 1,
+    RUN = (1,)
     TERMINATE = 2
+
 
 class Engine:
     def __init__(self, modules, signals):
@@ -39,27 +43,15 @@ class Engine:
             module.stop(data)
 
         return data
-    
+
     def _strip_down_input_signal(self, data, inputSignals):
         stripped_data = {}
 
         if not inputSignals:
             return
-        
-        for key in inputSignals:
-            keys = key.split('.')  # Split the key by dot to handle nested keys
-            current_data = data
 
-            # Traverse the nested keys
-            for sub_key in keys:
-                if sub_key in current_data:
-                    current_data = current_data[sub_key]
-                else:
-                    # If a nested key does not exist, return None or handle error
-                    current_data = None
-                    break
-            
-            stripped_data[key] = current_data
+        for key in inputSignals:
+            stripped_data[key] = get_nested_key(key, data)
 
         return stripped_data
 
@@ -79,8 +71,8 @@ class Engine:
                 mode = EngineMode.RUN
 
             # Validate module output with module output schema (only if we are supposed to run)
-            if mode ==  EngineMode.RUN:
-              module.outputValidator.validate(remove_galy_streams(results))
+            if mode == EngineMode.RUN:
+                module.outputValidator.validate(remove_galy_streams(results))
 
             # Verify its result
             # TODO: Use JSON Schema validation here
@@ -91,10 +83,8 @@ class Engine:
             # Update the dictionary
             data.update(results)
 
-            
-
             # If the module requests termination, stop immediately
             if mode == EngineMode.TERMINATE:
-              return data, EngineMode.TERMINATE
+                return data, EngineMode.TERMINATE
 
         return data, EngineMode.RUN

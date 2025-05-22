@@ -28,11 +28,37 @@ class TerminateAfter(Module):
     def stop(self, data):
         pass
 
+class ImageSender(Module):
+    def __init__(self):
+        super().__init__(outputSchema={
+            "type": "object",
+            "properties": {
+                "image": { }
+            }
+        })
+
+    def start(self, data):
+        self.shape = (640, 480)
+        self.image = np.float32(cv2.resize(cv2.imread("./image.jpg") / 255.0, self.shape))
+        
+
+    def step(self, data):
+        galy = GALY()
+        galy.canvas("Main", self.shape, (0.0, 0.0, 0.0))
+        galy.blit("image", (0,0))
+        print(".")
+        return {
+            "image": self.image,
+            "galy": galy
+        }
+
+    def stop(self, data):
+        pass
 
 parser = argparse.ArgumentParser("Example Program")
 parser.add_argument("--mode", action="store", default="replay", required=True)
 parser.add_argument("--webcam.width", required=False)
-modules = [ConfigParser(parser), Webcam()]
+modules = [ConfigParser(parser), TerminateAfter(20), ImageSender()]
 
 
 engine = Engine(modules=modules, signals={})

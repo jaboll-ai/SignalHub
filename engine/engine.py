@@ -1,6 +1,7 @@
 from enum import Enum
 from .galy import process_galy, remove_galy_streams
 from .misc import get_nested_key
+from .galyQT import run_qt_eventloop, qt_quit
 
 import logging
 
@@ -19,6 +20,14 @@ class Engine:
         self.signals = signals
 
         pass
+    
+    def _step_callback_from_qt(self):
+         data, mode = self.step(self.data)
+
+         if mode == EngineMode.TERMINATE:
+             qt_quit()             
+
+         self.data = process_galy(data)
 
     def run(self, data):
         # Init all module
@@ -29,14 +38,9 @@ class Engine:
 
             module.start(data)
 
-        # Run till termination
-        while True:
-            data, mode = self.step(data)
-
-            if mode == EngineMode.TERMINATE:
-                break
-
-            data = process_galy(data)
+        # Pass execution to QT
+        self.data = data
+        run_qt_eventloop(self._step_callback_from_qt)
 
         # Shutdown all module
         for module in self.modules:

@@ -3,6 +3,7 @@ import logging
 import cv2
 import numpy as np
 from .misc import get_nested_key
+from .galyQT import qt_update_image
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -224,7 +225,10 @@ def process_galy(data):
 
     # Now show all canvases
     for canvasName, canvas in galyCanvases.items():
-        cv2.imshow(canvasName, canvas.image)
+        if canvas == mainCanvas:
+          qt_update_image(canvas.image)
+        else:
+          cv2.imshow(canvasName, canvas.image)
 
     # WaitKey (TODO: Needs to be done different such that the engine remains control on what happens)
     key = cv2.waitKey(1)

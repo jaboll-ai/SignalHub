@@ -7,7 +7,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 class Webcam(Module):
     def __init__(self, outputSignal="webcam"):
         super().__init__(
@@ -19,9 +18,12 @@ class Webcam(Module):
         self.outputSignal = outputSignal
 
     def start(self, data):
+        # Open a video capture
         self.cam = cv2.VideoCapture(
             get_nested_key("config.webcam.deviceIndex", data) or 0
         )
+
+        
 
     def step(self, data):
         # Read next image from the Webcam
@@ -34,6 +36,7 @@ class Webcam(Module):
         )
         shape = (int(W), int(H))
 
+        # Retrieve the target data type 
         dtype = get_nested_key("config.webcam.dtype", data) or "float32"
 
         # Rescale to target size
@@ -45,6 +48,7 @@ class Webcam(Module):
         else:
             logger.critical(f"Webcam: Unknown target datatype {dtype}")
             exit()
+
 
         galy = GALY()
         galy.canvas("Main", shape, (0.0, 0.0, 0.0))

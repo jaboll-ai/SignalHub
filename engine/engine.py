@@ -1,4 +1,9 @@
 from enum import Enum
+from .galy import process_galy, remove_galy_streams
+
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class EngineMode(Enum):
     RUN = 1,
@@ -14,6 +19,10 @@ class Engine:
     def run(self, data):
         # Init all module
         for module in self.modules:
+            if not module.check_initialized():
+                logging.critical(f"Module {module.name} did not call super constructor")
+                exit()
+
             module.start(data)
 
         # Run till termination
@@ -22,6 +31,8 @@ class Engine:
 
             if mode == EngineMode.TERMINATE:
                 break
+
+            data = process_galy(data)
 
         # Shutdown all module
         for module in self.modules:
@@ -69,7 +80,7 @@ class Engine:
 
             # Validate module output with module output schema (only if we are supposed to run)
             if mode ==  EngineMode.RUN:
-              module.outputValidator.validate(results)
+              module.outputValidator.validate(remove_galy_streams(results))
 
             # Verify its result
             # TODO: Use JSON Schema validation here

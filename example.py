@@ -1,9 +1,8 @@
 import numpy as np
-from engine import Engine, Module, EngineMode
+from engine import Engine, Module, EngineMode, GALY
 from modules import ConfigParser
-
+import numpy as np
 import argparse
-
 
 class TerminateAfter(Module):
     def __init__(self, count):
@@ -28,37 +27,51 @@ class TerminateAfter(Module):
         pass
 
 
-class Sender(Module):
-    def __init__(self, signal):
-        super().__init__(outputSchema={
-            "type": "object",
-            "properties" : {
-                signal : { "type": "integer" }
-            },
-            "required": [signal]
-        })
-
-        self.name = f"Sender ({signal})"
-        self.signal = signal
-        self.value = 0
+class RandomPositionSender(Module):
+    def __init__(self):
+        super().__init__(inputSignals=["config"] ,outputSchema=
+                         {
+                             "type": "object",
+                             "properties": {
+                                 "startPoint": { "type": "array" },
+                                 "endPoint": { "type": "array" }
+                             }
+                         })
+        self.name = f"Random Position Sender"
         pass
 
     def start(self, data):
         pass
 
     def step(self, data):
-        self.value += 1
-        result = { self.signal: self.value }
+        W, H = data["config"]["video"]["width"], data["config"]["video"]["height"]
+        x, y = np.random.uniform(0.0, W, 2), np.random.uniform(0.0, H, 2)
 
-        return result
+        return { 
+            "startPoint": [ int(x[0]), int(y[0]) ], 
+            "endPoint": [ int(x[1]), int(y[1]) ]
+        }
 
     def stop(self, data):
         pass
 
+class GALYDrawer(Module):
+    def __init__(self):
+        super().__init__(inputSignals=["config", "startPoint", "endPoint"])
+
+        self.name = f"GALY Drawer"
+
+    def step(self, data):
+        galy = GALY()
+        shape = (data["config"]["video"]["width"], data["config"]["video"]["height"])
+        galy.canvas("Main Canvas", shape, (1.0, 1.0, 1.0))
+        galy.line(data["startPoint"], data["endPoint"], (0.0, 0.0, 0.0), 2)
+
+        return { "xyz": galy }
 
 class Receiver(Module):
     def __init__(self):
-        super().__init__(inputSignals=["A", "B", "config.video.width", "other"])
+        super().__init__(inputSignals=["A", "B", "config.video.width"])
         self.name = f"Receiver"
         pass
 
@@ -67,7 +80,7 @@ class Receiver(Module):
 
     def step(self, data):
         print(data)
-        return { "other": "passed" }
+        return { }
 
     def stop(self, data):
         pass
@@ -79,10 +92,11 @@ parser.add_argument("--video.width", required=False)
 modules = [
     ConfigParser(parser),
     TerminateAfter(5),
-    Sender("A"),
-    Sender("B"),
+    RandomPositionSender(),
+    GALYDrawer(),
     Receiver(),
 ]
+
 
 
 engine = Engine(modules=modules, signals={})

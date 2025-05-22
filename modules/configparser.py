@@ -1,9 +1,9 @@
 import argparse
 import yaml
 import os
-import logging
 from engine import Module
 
+import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,7 @@ class ConfigParser(Module):
         super().__init__(outputSchema={
             "type": "object",
             "properties":{
-                "config": {
-                    "type": dict
-                }
+                "config": { }
             },
         })
 

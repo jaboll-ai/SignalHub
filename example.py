@@ -58,7 +58,7 @@ class ImageSender(Module):
 parser = argparse.ArgumentParser("Example Program")
 parser.add_argument("--mode", action="store", default="replay", required=True)
 parser.add_argument("--webcam.width", required=False)
-modules = [ConfigParser(parser), TerminateAfter(20), ImageSender()]
+modules = [ConfigParser(parser), Webcam()]
 
 
 engine = Engine(modules=modules, signals={})

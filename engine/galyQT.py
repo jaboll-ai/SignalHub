@@ -42,20 +42,34 @@ class MainWindow(QMainWindow):
     def open_image(self):
         pass
     
-
     def create_menu_bar(self):
         menubar = self.menuBar()
 
         # File menu
-        file_menu = menubar.addMenu('File')
+        self.file_menu = menubar.addMenu('File')
 
         open_action = QAction('Open Image', self)
         open_action.triggered.connect(self.open_image)
-        file_menu.addAction(open_action)
+        self.file_menu.addAction(open_action)
 
         exit_action = QAction('Exit', self)
         exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
+        self.file_menu.addAction(exit_action)
+
+        # Canvas menu
+        self.canvas_menu = menubar.addMenu("Canvas")
+
+    def on_canvas_toggle(self):
+        action = self.sender()  # Get the QAction that triggered the handler
+        context = action.data()  # Retrieve the context data
+        canvasName = context["canvasName"]
+        
+
+    def add_canvas_entry(self, name):
+        canvas_action = QAction(name, self)
+        canvas_action.setData({"canvasName": name})
+        canvas_action.triggered.connect(self.on_canvas_toggle)
+        self.canvas_menu.addAction(canvas_action)
 
     def update_image(self, image):
         # Convert the image from BGR to RGB
@@ -83,6 +97,9 @@ class MainWindow(QMainWindow):
         self.setFixedSize(self.size())  # Lock the window size to the current size
 
 app, window = None, None
+
+def qt_add_canvas_entry(name):
+    window.add_canvas_entry(name)
 
 def run_qt_eventloop(engineStepCallback):
     global app, window

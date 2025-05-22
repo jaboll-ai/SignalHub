@@ -3,7 +3,7 @@ import logging
 import cv2
 import numpy as np
 from .misc import get_nested_key
-from .galyQT import qt_update_image
+from .galyQT import qt_update_image, qt_add_canvas_entry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -125,6 +125,8 @@ def process_canvas(kwargs, otherData):
 
         if mainCanvas is None:
             mainCanvas = canvas
+        else:
+            qt_add_canvas_entry(name)       
 
         galyCanvases[name] = canvas
 

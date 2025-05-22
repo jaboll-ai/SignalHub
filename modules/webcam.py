@@ -46,12 +46,15 @@ class Webcam(Module):
         if dtype == "float32":
             image = np.float32(image / 255.0)
         else:
-            logger.critical(f"Webcam: Unknown target datatype {dtype}")
+            logger.critical(f"Webcam: Unknown Target Datatype {dtype}")
             exit()
 
 
         galy = GALY()
         galy.canvas("Main", shape, (0.0, 0.0, 0.0))
+        galy.blit("webcam", (0, 0))
+
+        galy.canvas("Extra", shape, (0.0, 0.0, 0.0))
         galy.blit("webcam", (0, 0))
 
         return {self.outputSignal: image, "galy": galy}

@@ -13,6 +13,13 @@ logger = logging.getLogger(__name__)
 ICON_NONCHECKED = None
 ICON_CHECKED = "icons/healthy.png"
 
+class CanvasWindowData:
+    def __init__(self, window, action):
+        self.window = window
+        self.action = action
+        self.image = None
+
+
 class OpenCVWindow(QDialog):
     def __init__(self, mainWindow, title):
         super().__init__()
@@ -35,6 +42,8 @@ class OpenCVWindow(QDialog):
 
     def closeEvent(self, event):
         self.save_window_settings()
+
+        self.mainWindow.onCloseCanvas(self.windowTitle())
         event.accept()
     
     def save_window_settings(self):
@@ -114,6 +123,9 @@ class MainWindow(QMainWindow):
         self.create_menu_bar()
         self.engine = engine
 
+        # Load the window position and size from settings
+        self.load_window_settings()
+
 
     def set_singleStep(self, newState):
         self.singleStep = newState
@@ -145,11 +157,32 @@ class MainWindow(QMainWindow):
             self.handleEnter()
         elif key == Qt.Key_Space:
             self.handleSpace()
-           
+
+        
     def closeEvent(self, event):
-        for window in self.canvasWindows:
+        self.save_window_settings()
+
+        for window in self.canvasWindows.values():
             if window is not None:
+                window.save_window_settings()
                 window.close()
+
+    def save_window_settings(self):
+        """
+        Save the window's position and size using QSettings.
+        """
+        settings = QSettings("DMUSoftware", "SignalHub")  # You can replace with your application name
+        key = self.windowTitle() + "/pos"
+        settings.setValue(key, self.pos())  # Save the window position
+
+    def load_window_settings(self):
+        """
+        Load the window's position and size from QSettings.
+        """
+        settings = QSettings("DMUSoftware", "SignalHub")  # You can replace with your application name
+        key = self.windowTitle() + "/pos"
+        if settings.contains(key):
+            self.move(settings.value(key))  # Restore the window position
 
     def step(self):
         self.engine.step_callback_from_qt()
@@ -174,19 +207,23 @@ class MainWindow(QMainWindow):
         # Canvas menu
         self.canvas_menu = menubar.addMenu("Canvas")
 
-        self.canvasWindows = {}
-        self.canvasImages = {}
+        self.canvasData = {}
 
     def display_canvas(self, name, image):
-        if name not in self.canvasWindows:
+        if name not in self.canvasData:
             logger.critical(f"GALY: Unknown canvas to display: {name}")
             exit()
 
-        if self.canvasWindows[name] is None:
+        data = self.canvasData[name]
+        if data is None:
             return
         
-        self.canvasWindows[name].update_image(image)
-        self.canvasImages[name] = image
+        data.window.update_image(image)
+        data.image = image
+           
+    def onCloseCanvas(self, canvasName):
+        self.canvasData[canvasName].action.setChecked(False)
+        self.canvasData[canvasName].action.setIcon(QIcon(ICON_NONCHECKED))
 
     def on_canvas_toggle(self):
         action = self.sender()  # Get the QAction that triggered the handler
@@ -195,17 +232,20 @@ class MainWindow(QMainWindow):
         canvasName = context["canvasName"]
 
         if action.isChecked():  # If the action is checked (active)
-            #cv2.namedWindow(canvasName)
             action.setIcon(QIcon(ICON_CHECKED))
-            self.canvasWindows[canvasName] = OpenCVWindow(self, canvasName)
-            self.canvasWindows[canvasName].show()
-            if canvasName in self.canvasImages:
-                self.canvasWindows[canvasName].update_image(self.canvasImages[canvasName])
+
+            if canvasName not in self.canvasData:
+                self.canvasData[canvasName] = CanvasWindowData(OpenCVWindow(self, canvasName), action)
+            else:
+                self.canvasData[canvasName].window = OpenCVWindow(self, canvasName)
+                self.canvasData[canvasName].window.update_image(self.canvasData[canvasName].image)
+
+            self.canvasData[canvasName].window.show()
         else:
             #cv2.destroyWindow(canvasName)
             action.setIcon(QIcon(ICON_NONCHECKED))
-            self.canvasWindows[canvasName].close()
-            self.canvasWindows[canvasName] = None
+            self.canvasData[canvasName].window.close()
+            self.canvasData[canvasName].window = None
 
     
 
@@ -213,8 +253,8 @@ class MainWindow(QMainWindow):
         canvas_action = QAction(name, self)
         canvas_action.setData({"canvasName": name})
         canvas_action.setCheckable(True)
-        self.canvasWindows[name] = OpenCVWindow(self, name)
-        self.canvasWindows[name].show()
+        self.canvasData[name] = CanvasWindowData(OpenCVWindow(self, name), canvas_action)
+        self.canvasData[name].window.show()
         canvas_action.setChecked(True)
         canvas_action.setIcon(QIcon(ICON_CHECKED))
 

@@ -199,8 +199,6 @@ def process_galy_stream(stream: GALY, otherData: dict):
             )
             exit()
 
-    pass
-
 
 def remove_galy_streams(data):
     remaining_signals = {}

@@ -14,6 +14,7 @@ from .engineSpeed import (
     get_speed_status_text,
     engineSpeedToMilliseconds,
 )
+from .OSMemory import get_memory_text
 
 
 logging.basicConfig(level=logging.INFO)
@@ -50,7 +51,10 @@ class MainWindow(OpenCVWindow):
         handle_speed_initialization(self, config)
 
     def update_status_bar_message(self):
-        self.status_bar.showMessage(get_speed_status_text(self.engineSpeed))
+        speedText = get_speed_status_text(self.engineSpeed)
+        memoryText = get_memory_text()
+        bufferText = self.engine.get_buffer_status_text()
+        self.status_bar.showMessage(speedText + "           " + memoryText + "           " + bufferText)
 
     def change_simulation_speed(self, newSpeed):
         self.engineSpeed = newSpeed
@@ -63,10 +67,8 @@ class MainWindow(OpenCVWindow):
     def set_singleStep(self, newState):
         self.singleStep = newState
         if self.singleStep == False:
-            print("Starting timer")
             self.timer.start(engineSpeedToMilliseconds[self.engineSpeed])
         else:
-            print("Stopping timer")
             self.timer.stop()
 
     def handleEscape(self):
@@ -88,7 +90,7 @@ class MainWindow(OpenCVWindow):
             self.handleEscape()
         elif key == Qt.Key_Enter or key == Qt.Key_Return:
             self.handleEnter()
-        elif key == Qt.Key_Space:
+        elif key == Qt.Key_Space or key == Qt.Key_Plus:
             self.handleSpace()
         elif key == Qt.Key_1:
             self.singleStep = False
@@ -105,6 +107,10 @@ class MainWindow(OpenCVWindow):
         elif key == Qt.Key_5:
             self.singleStep = False
             self.change_simulation_speed(EngineSpeed.FASTEST)
+        elif key == Qt.Key_Minus:
+            self.set_singleStep(True)
+            self.engine.step_backward()
+            self.update_status_bar_message()
 
     def closeEvent(self, event):
         self.save_window_settings()
@@ -115,7 +121,8 @@ class MainWindow(OpenCVWindow):
                 data.window.close()
 
     def step(self):
-        self.engine.step_callback_from_qt()
+        self.engine.step_forward()
+        self.update_status_bar_message()
 
     def create_menu_bar(self):
         menubar = self.menuBar()

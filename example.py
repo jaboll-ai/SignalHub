@@ -60,7 +60,7 @@ class ImageSender(Module):
 
         galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
 
-        print(f"Step {self.counter}")
+        #print(f"Step {self.counter}")
         self.counter += 1
         return {"image": self.image, "galy": galy}
 
@@ -72,7 +72,7 @@ parser = argparse.ArgumentParser("Example Program")
 parser.add_argument("--mode", action="store", default="replay", required=True)
 parser.add_argument("--engine.singlestep", action="store_true", default=False)
 parser.add_argument("--webcam.width", required=False)
-modules = [ConfigParser(parser), ImageSender()]
+modules = [ConfigParser(parser), Webcam()]
 
 
 engine = Engine(modules=modules, signals={})

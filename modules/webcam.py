@@ -24,6 +24,8 @@ class Webcam(Module):
             get_nested_key("config.webcam.deviceIndex", data) or 0
         )
 
+        return { }
+
     def step(self, data):
         # Read next image from the Webcam
         _, frame = self.cam.read()

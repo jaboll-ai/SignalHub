@@ -14,18 +14,60 @@ class EngineMode(Enum):
     TERMINATE = 2
 
 
+class DataBuffer:
+    def __init__(self):
+        self.buffer = []
+        self.index = 0
+
+    def add_and_move_to_end(self, data):
+        self.buffer.append(data)
+        self.index = len(self.buffer) - 1
+
+    def is_at_end(self):
+        if len(self.buffer) == 0:
+            return True
+        
+        return self.index == len(self.buffer) - 1
+
+    def step_forward(self):
+        if self.index < len(self.buffer) - 1:
+            self.index += 1
+
+        return self.buffer[self.index]
+
+    def step_backward(self):
+        if self.index > 0:
+            self.index -= 1
+
+        return self.buffer[self.index]
+
+    def len(self):
+        return len(self.buffer)
+
 class Engine:
     def __init__(self, modules, signals):
         self.modules = modules
         self.signals = signals
 
-        pass
+        self.buffer = DataBuffer()
 
-    def step_callback_from_qt(self):
-        data, mode = self.step(self.data)
+    def get_buffer_status_text(self):
+        return f"Scan {self.buffer.index + 1} / {self.buffer.len()}"
 
-        if mode == EngineMode.TERMINATE:
-            qt_quit()
+    def step_backward(self):
+        data = self.buffer.step_backward()
+        process_galy(data)
+
+    def step_forward(self):
+        # If the buffer is at the end, we have to actually step through the modules
+        if self.buffer.is_at_end():
+            data, mode = self.step(self.data)
+            self.buffer.add_and_move_to_end(data)
+
+            if mode == EngineMode.TERMINATE:
+                qt_quit()
+        else:
+            data = self.buffer.step_forward()
 
         self.data = process_galy(data)
 

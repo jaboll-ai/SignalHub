@@ -1,11 +1,21 @@
 import sys
 import logging
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QAction, QDialog
+from PyQt5.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QLabel,
+    QVBoxLayout,
+    QWidget,
+    QAction,
+    QDialog,
+    QStatusBar,
+)
 from PyQt5.QtGui import QPixmap, QImage, QIcon
 from PyQt5.QtCore import Qt, QSettings, QTimer
 import cv2
 import numpy as np
 from enum import Enum
+from .misc import get_nested_key
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,11 +23,13 @@ logger = logging.getLogger(__name__)
 ICON_NONCHECKED = None
 ICON_CHECKED = "icons/healthy.png"
 
+
 class CanvasWindowData:
     def __init__(self, window, action):
         self.window = window
         self.action = action
         self.image = None
+
 
 class OpenCVWindow(QMainWindow):
     def __init__(self, mainWindow, title):
@@ -45,16 +57,18 @@ class OpenCVWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.save_window_settings()
-        if self.mainWindow is not None:    
-            self.mainWindow.onCloseCanvas(self.windowTitle())
+        if self.mainWindow is not None:
+            self.mainWindow.on_close_canvas(self.windowTitle())
 
         event.accept()
-    
+
     def save_window_settings(self):
         """
         Save the window's position and size using QSettings.
         """
-        settings = QSettings("DMUSoftware", "SignalHub")  # You can replace with your application name
+        settings = QSettings(
+            "DMUSoftware", "SignalHub"
+        )  # You can replace with your application name
         key = self.windowTitle() + "/pos"
         settings.setValue(key, self.pos())  # Save the window position
 
@@ -62,7 +76,9 @@ class OpenCVWindow(QMainWindow):
         """
         Load the window's position and size from QSettings.
         """
-        settings = QSettings("DMUSoftware", "SignalHub")  # You can replace with your application name
+        settings = QSettings(
+            "DMUSoftware", "SignalHub"
+        )  # You can replace with your application name
         key = self.windowTitle() + "/pos"
         if settings.contains(key):
             self.move(settings.value(key))  # Restore the window position
@@ -87,7 +103,7 @@ class OpenCVWindow(QMainWindow):
 
         self.adjustSize()  # This will resize the window to fit the content exactly
         QTimer.singleShot(0, self.set_fixed_size)
-    
+
     def set_fixed_size(self):
         # Lock the window size after the layout has been updated
         self.setFixedSize(self.size())  # Lock the window size to the current size
@@ -95,35 +111,101 @@ class OpenCVWindow(QMainWindow):
     def keyPressEvent(self, event):
         if self.mainWindow is not None:
             self.mainWindow.keyPressEvent(event)
-        
 
-        
+
+class EngineSpeed(Enum):
+    SLOWEST = (1,)
+    SLOW = (2,)
+    NORMAL = (3,)
+    FAST = (4,)
+    FASTEST = 5
+
+
+engineSpeedToMilliseconds = {
+    EngineSpeed.SLOWEST: 600,
+    EngineSpeed.SLOW: 300,
+    EngineSpeed.NORMAL: 80,
+    EngineSpeed.FAST: 33,
+    EngineSpeed.FASTEST: 1,
+}
+
+engineSpeedToText = {
+    EngineSpeed.SLOWEST: "Slowest",
+    EngineSpeed.SLOW: "Slow",
+    EngineSpeed.NORMAL: "Normal",
+    EngineSpeed.FAST: "Fast",
+    EngineSpeed.FASTEST: "Realtime",
+}
+
+
 class MainWindow(OpenCVWindow):
-    def __init__(self, engine):
+    def __init__(self, engine, config):
         super().__init__(None, "Main")
 
         self.singleStep = False
 
+        self.create_menu_bar()
+        self.engine = engine
+
+        # Set up the status bar
+        self.status_bar = QStatusBar(self)
+        self.setStatusBar(self.status_bar)
+
         # Set up a timer to periodically update the window
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.step)  # Method to update image
-        self.timer.start(33) 
 
-        self.create_menu_bar()
-        self.engine = engine
+        singleStep = False
+        speed = get_nested_key("engine.speed", config) or 3
+        if speed == 0:
+            speed = EngineSpeed.NORMAL
+            singleStep = True
+            self.set_singleStep(True)
+        elif speed == 1:
+            speed = EngineSpeed.SLOWEST
+        elif speed == 2:
+            speed = EngineSpeed.SLOW
+        elif speed == 3:
+            speed = EngineSpeed.NORMAL
+        elif speed == 4:
+            speed = EngineSpeed.FAST
+        elif speed == 5:
+            speed = EngineSpeed.FASTEST
+        self.change_simulation_speed(speed)
+
+        if (get_nested_key("engine.singlestep", config) == True) or (
+            singleStep == True
+        ):
+            self.set_singleStep(True)
+
+            # If we start in single step mode right away, we still need to do the first step
+            singleShotTimer = QTimer(self)
+            singleShotTimer.singleShot(1, self.step)
+
+    def update_status_bar_message(self):
+        speedStatus = f"Speed: {engineSpeedToText[self.engineSpeed]} ({engineSpeedToMilliseconds[self.engineSpeed]}ms)"
+        self.status_bar.showMessage(speedStatus)
+
+    def change_simulation_speed(self, newSpeed):
+        self.engineSpeed = newSpeed
+
+        self.timer.stop()
+        self.timer.start(engineSpeedToMilliseconds[self.engineSpeed])
+
+        self.update_status_bar_message()
 
     def set_singleStep(self, newState):
         self.singleStep = newState
         if self.singleStep == False:
             print("Starting timer")
-            self.timer.start(33)
+            self.timer.start(engineSpeedToMilliseconds[self.engineSpeed])
         else:
             print("Stopping timer")
             self.timer.stop()
 
     def handleEscape(self):
         self.close()
-    
+
     def handleEnter(self):
         self.set_singleStep(not self.singleStep)
 
@@ -135,47 +217,52 @@ class MainWindow(OpenCVWindow):
 
     def keyPressEvent(self, event):
         key = event.key()  # Get the key that was pressed
-        
+
         if key == Qt.Key_Escape:
             self.handleEscape()
         elif key == Qt.Key_Enter or key == Qt.Key_Return:
             self.handleEnter()
         elif key == Qt.Key_Space:
             self.handleSpace()
+        elif key == Qt.Key_1:
+            self.singleStep = False
+            self.change_simulation_speed(EngineSpeed.SLOWEST)
+        elif key == Qt.Key_2:
+            self.singleStep = False
+            self.change_simulation_speed(EngineSpeed.SLOW)
+        elif key == Qt.Key_3:
+            self.singleStep = False
+            self.change_simulation_speed(EngineSpeed.NORMAL)
+        elif key == Qt.Key_4:
+            self.singleStep = False
+            self.change_simulation_speed(EngineSpeed.FAST)
+        elif key == Qt.Key_5:
+            self.singleStep = False
+            self.change_simulation_speed(EngineSpeed.FASTEST)
 
-        
     def closeEvent(self, event):
-        super().closeEvent(event)
-        
-        for window in self.canvasWindows.values():
-            if window is not None:
-                window.save_window_settings()
-                window.close()
+        self.save_window_settings()
 
+        for data in self.canvasData.values():
+            if data is not None:
+                data.window.save_window_settings()
+                data.window.close()
 
     def step(self):
         self.engine.step_callback_from_qt()
-        
-    def open_image(self):
-        pass
-    
+
     def create_menu_bar(self):
         menubar = self.menuBar()
 
         # File menu
-        self.file_menu = menubar.addMenu('File')
+        self.file_menu = menubar.addMenu("File")
 
-        open_action = QAction('Open Image', self)
-        open_action.triggered.connect(self.open_image)
-        self.file_menu.addAction(open_action)
-
-        exit_action = QAction('Exit', self)
+        exit_action = QAction("Exit", self)
         exit_action.triggered.connect(self.close)
         self.file_menu.addAction(exit_action)
 
         # Canvas menu
         self.canvas_menu = menubar.addMenu("Canvas")
-
         self.canvasData = {}
 
     def display_canvas(self, name, image):
@@ -186,11 +273,11 @@ class MainWindow(OpenCVWindow):
         data = self.canvasData[name]
         if data is None:
             return
-        
+
         data.window.update_image(image)
         data.image = image
-           
-    def onCloseCanvas(self, canvasName):
+
+    def on_close_canvas(self, canvasName):
         self.canvasData[canvasName].action.setChecked(False)
         self.canvasData[canvasName].action.setIcon(QIcon(ICON_NONCHECKED))
 
@@ -204,25 +291,29 @@ class MainWindow(OpenCVWindow):
             action.setIcon(QIcon(ICON_CHECKED))
 
             if canvasName not in self.canvasData:
-                self.canvasData[canvasName] = CanvasWindowData(OpenCVWindow(self, canvasName), action)
+                self.canvasData[canvasName] = CanvasWindowData(
+                    OpenCVWindow(self, canvasName), action
+                )
             else:
                 self.canvasData[canvasName].window = OpenCVWindow(self, canvasName)
-                self.canvasData[canvasName].window.update_image(self.canvasData[canvasName].image)
+                self.canvasData[canvasName].window.update_image(
+                    self.canvasData[canvasName].image
+                )
 
             self.canvasData[canvasName].window.show()
         else:
-            #cv2.destroyWindow(canvasName)
+            # cv2.destroyWindow(canvasName)
             action.setIcon(QIcon(ICON_NONCHECKED))
             self.canvasData[canvasName].window.close()
             self.canvasData[canvasName].window = None
-
-    
 
     def add_canvas_entry(self, name):
         canvas_action = QAction(name, self)
         canvas_action.setData({"canvasName": name})
         canvas_action.setCheckable(True)
-        self.canvasData[name] = CanvasWindowData(OpenCVWindow(self, name), canvas_action)
+        self.canvasData[name] = CanvasWindowData(
+            OpenCVWindow(self, name), canvas_action
+        )
         self.canvasData[name].window.show()
         canvas_action.setChecked(True)
         canvas_action.setIcon(QIcon(ICON_CHECKED))
@@ -231,28 +322,31 @@ class MainWindow(OpenCVWindow):
         self.canvas_menu.addAction(canvas_action)
 
 
-
 app, window = None, None
 
-def qt_display_canvas(name, image):
-    window.display_canvas(name, image)
+
+def qt_display_canvas(image, name=None):
+    global window
+
+    if name is not None:
+        window.display_canvas(name, image)
+    else:
+        window.update_image(image)
+
 
 def qt_add_canvas_entry(name):
     window.add_canvas_entry(name)
 
-def run_qt_eventloop(engine):
+
+def run_qt_eventloop(engine, config):
     global app, window
 
     app = QApplication(sys.argv)
-    window = MainWindow(engine)
+    window = MainWindow(engine, config)
 
     window.show()  # Show the window
     app.exec_()  # Enter the event loop
 
-def qt_update_image(image):
-    global window
-    window.update_image(image)
 
 def qt_quit():
     app.quit()
-

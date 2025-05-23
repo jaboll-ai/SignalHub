@@ -20,14 +20,14 @@ class Engine:
         self.signals = signals
 
         pass
-    
+
     def step_callback_from_qt(self):
-         data, mode = self.step(self.data)
+        data, mode = self.step(self.data)
 
-         if mode == EngineMode.TERMINATE:
-             qt_quit()             
+        if mode == EngineMode.TERMINATE:
+            qt_quit()
 
-         self.data = process_galy(data)
+        self.data = process_galy(data)
 
     def run(self, data):
         # Init all module
@@ -36,11 +36,12 @@ class Engine:
                 logging.critical(f"Module {module.name} did not call super constructor")
                 exit()
 
-            module.start(data)
+        # Start all modules
+        self.step(data, True)
 
         # Pass execution to QT
         self.data = data
-        run_qt_eventloop(self)
+        run_qt_eventloop(self, data["config"])
 
         # Shutdown all module
         for module in self.modules:
@@ -59,14 +60,17 @@ class Engine:
 
         return stripped_data
 
-    def step(self, data):
+    def step(self, data, start=False):
         # Iterate all modules
         for module in self.modules:
             # Only present the requested data to this module
             stripped_data = self._strip_down_input_signal(data, module.inputSignals)
 
             # Run a single step of the module
-            results = module.step(stripped_data)
+            if start:
+                results = module.start(stripped_data)
+            else:
+                results = module.step(stripped_data)
 
             # If we received a tuple, unpack it first. Otherwise we have just received results (for convenience)
             if type(results) is tuple:

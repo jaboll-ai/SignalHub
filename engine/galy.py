@@ -3,7 +3,7 @@ import logging
 import cv2
 import numpy as np
 from .misc import get_nested_key
-from .galyQT import qt_update_image, qt_add_canvas_entry, qt_display_canvas
+from .galyQT import qt_add_canvas_entry, qt_display_canvas
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -126,7 +126,7 @@ def process_canvas(kwargs, otherData):
         if mainCanvas is None:
             mainCanvas = canvas
         else:
-            qt_add_canvas_entry(name)       
+            qt_add_canvas_entry(name)
 
         galyCanvases[name] = canvas
 
@@ -227,14 +227,6 @@ def process_galy(data):
 
     # Now show all canvases
     for canvasName, canvas in galyCanvases.items():
-        if canvas == mainCanvas:
-          qt_update_image(canvas.image)
-        else:
-          qt_display_canvas(canvasName, canvas.image)
-
-    # WaitKey (TODO: Needs to be done different such that the engine remains control on what happens)
-    # key = cv2.waitKey(1)
-    # if key == 27:
-    #     exit()
+        qt_display_canvas(canvas.image, canvasName if canvas != mainCanvas else None)
 
     return remaining_signals

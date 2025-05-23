@@ -1,3 +1,5 @@
+engine:
+  speed: 4
 webcam:
   deviceIndex: 0
   width: 640

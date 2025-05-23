@@ -68,6 +68,8 @@ class ConfigParser(Module):
 
             set_nested_key(key, value, dct)
 
+        return self.config
+
     def step(self, data):
         return self.config
 

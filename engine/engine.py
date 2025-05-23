@@ -18,10 +18,19 @@ class DataBuffer:
     def __init__(self):
         self.buffer = []
         self.index = 0
+        self.max_size = 600
+
+    def set_max_size(self, sz):
+        self.max_size = sz
 
     def add_and_move_to_end(self, data):
+        if len(self.buffer) >= self.max_size:
+            self.buffer.pop(0)
+
         self.buffer.append(data)
         self.index = len(self.buffer) - 1
+        
+
 
     def is_at_end(self):
         if len(self.buffer) == 0:
@@ -79,10 +88,11 @@ class Engine:
                 exit()
 
         # Start all modules
-        self.step(data, True)
+        self.data, _ = self.step(data, True)
+        historyBufferSize = get_nested_key("config.engine.history", self.data) or 600
+        self.buffer.set_max_size(historyBufferSize)
 
         # Pass execution to QT
-        self.data = data
         run_qt_eventloop(self, data["config"])
 
         # Shutdown all module

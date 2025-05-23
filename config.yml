@@ -1,5 +1,6 @@
 engine:
   speed: 4
+  history: 100
 webcam:
   deviceIndex: 0
   width: 1024

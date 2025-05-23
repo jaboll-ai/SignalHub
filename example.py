@@ -40,13 +40,30 @@ class ImageSender(Module):
     def start(self, data):
         self.shape = (640, 480)
         self.image = np.float32(cv2.resize(cv2.imread("./image.jpg") / 255.0, self.shape))
-        
+        self.counter = 0
 
     def step(self, data):
         galy = GALY()
         galy.canvas("Main", self.shape, (0.0, 0.0, 0.0))
         galy.blit("image", (0,0))
-        print(".")
+
+        galy.canvas("Clock", self.shape, (0.0, 0.0, 0.0))
+        
+        rad = self.counter / 10.0 * np.pi
+        x0, x1 = 320, int(320.0 + 160.0 * np.cos(rad))
+        y0, y1 = 240, int(240.0 + 160.0 * np.sin(rad))
+        galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
+
+        rad2 = self.counter / 60.0 * np.pi
+        x0, x1 = 320, int(320.0 + 80.0 * np.cos(rad2))
+        y0, y1 = 240, int(240.0 + 80.0 * np.sin(rad2))
+      
+        galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
+
+        
+        
+        print(f"Step {self.counter}")
+        self.counter += 1
         return {
             "image": self.image,
             "galy": galy
@@ -58,7 +75,7 @@ class ImageSender(Module):
 parser = argparse.ArgumentParser("Example Program")
 parser.add_argument("--mode", action="store", default="replay", required=True)
 parser.add_argument("--webcam.width", required=False)
-modules = [ConfigParser(parser), Webcam()]
+modules = [ConfigParser(parser), ImageSender()]
 
 
 engine = Engine(modules=modules, signals={})

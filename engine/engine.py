@@ -21,7 +21,7 @@ class Engine:
 
         pass
     
-    def _step_callback_from_qt(self):
+    def step_callback_from_qt(self):
          data, mode = self.step(self.data)
 
          if mode == EngineMode.TERMINATE:
@@ -40,7 +40,7 @@ class Engine:
 
         # Pass execution to QT
         self.data = data
-        run_qt_eventloop(self._step_callback_from_qt)
+        run_qt_eventloop(self)
 
         # Shutdown all module
         for module in self.modules:
@@ -74,15 +74,15 @@ class Engine:
             else:
                 mode = EngineMode.RUN
 
-            # Validate module output with module output schema (only if we are supposed to run)
-            if mode == EngineMode.RUN:
-                module.outputValidator.validate(remove_galy_streams(results))
-
             # Verify its result
             # TODO: Use JSON Schema validation here
             assert type(results) is dict, (
                 "Module " + module.name + " must return a dictionary!"
             )
+
+            # Validate module output with module output schema (only if we are supposed to run)
+            if mode == EngineMode.RUN:
+                module.outputValidator.validate(remove_galy_streams(results))
 
             # Update the dictionary
             data.update(results)

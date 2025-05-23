@@ -59,6 +59,8 @@ class Engine:
         self.signals = signals
 
         self.buffer = DataBuffer()
+        self.mode = EngineMode.RUN
+        self.autoclose = False
 
     def get_buffer_status_text(self):
         return f"Scan {self.buffer.index + 1} / {self.buffer.len()}"
@@ -69,12 +71,14 @@ class Engine:
 
     def step_forward(self):
         # If the buffer is at the end, we have to actually step through the modules
-        if self.buffer.is_at_end():
+        if self.buffer.is_at_end() and self.mode == EngineMode.RUN:
             data, mode = self.step(self.data)
             self.buffer.add_and_move_to_end(data)
 
             if mode == EngineMode.TERMINATE:
-                qt_quit()
+                self.mode = EngineMode.TERMINATE
+                if self.autoclose:
+                    qt_quit()
         else:
             data = self.buffer.step_forward()
 
@@ -89,13 +93,17 @@ class Engine:
 
         # Start all modules
         self.data, _ = self.step(data, True)
+
+        # Extract relevant configuration parameters
         historyBufferSize = get_nested_key("config.engine.history", self.data) or 600
         self.buffer.set_max_size(historyBufferSize)
+        self.autoclose = get_nested_key("config.engine.autoclose", self.data) or False
 
         # Pass execution to QT
         run_qt_eventloop(self, data["config"])
 
         # Shutdown all module
+        print("Shutting down all modules")
         for module in self.modules:
             module.stop(data)
 

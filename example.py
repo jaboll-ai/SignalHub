@@ -16,7 +16,7 @@ class TerminateAfter(Module):
 
     def start(self, data):
         self.count = 0
-        pass
+        return { }
 
     def step(self, data):
         self.count += 1
@@ -72,7 +72,7 @@ parser = argparse.ArgumentParser("Example Program")
 parser.add_argument("--mode", action="store", default="replay", required=True)
 parser.add_argument("--engine.singlestep", action="store_true", default=False)
 parser.add_argument("--webcam.width", required=False)
-modules = [ConfigParser(parser), Webcam()]
+modules = [ConfigParser(parser), Webcam(), TerminateAfter(100)]
 
 
 engine = Engine(modules=modules, signals={})

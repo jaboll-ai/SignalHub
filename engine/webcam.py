@@ -13,9 +13,9 @@ class Webcam(Module):
         super().__init__(
             inputSignals=["config"],
             outputSchema={"type": "object", "properties": {outputSignal: {}}},
+            name="Webcam Capture"
         )
 
-        self.name = f"Webcam Capture"
         self.outputSignal = outputSignal
 
     def start(self, data):
@@ -44,8 +44,10 @@ class Webcam(Module):
         image = cv2.resize(frame, shape)
 
         # Make it float32 if requested
-        if dtype == "float32":
+        if dtype == "float32" or dtype == "f32":
             image = np.float32(image / 255.0)
+        elif dtype == "uint8" or dtype == "u8":
+            pass # Nothing to do here
         else:
             logger.critical(f"Webcam: Unknown Target Datatype {dtype}")
             exit()

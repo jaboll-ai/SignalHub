@@ -2,16 +2,15 @@ from enum import Enum
 from .galy import process_galy, remove_galy_streams
 from .misc import get_nested_key
 from .galyQT import run_qt_eventloop, qt_quit
-
+from .configparser import ConfigParser  # Replace with the actual module name
+from .recorder import Recorder, Replay
+from .mode import EngineMode
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class EngineMode(Enum):
-    RUN = (1,)
-    TERMINATE = 2
 
 
 class DataBuffer:
@@ -84,11 +83,49 @@ class Engine:
 
         self.data = process_galy(data)
 
+    def wrap_modules_with_recorder(self, data):
+        for module in self.modules:
+            if isinstance(module, ConfigParser):
+                data = module.start(data)
+
+        mode = get_nested_key("config.mode", data) or None
+        
+        if mode == "record":
+            record_list = get_nested_key("config.recorder.record", data)
+            wrapped_modules = []
+            for module in self.modules:
+                if module._name in record_list:
+                    print(f"Wrapping {module._name} with recorder")
+                    wrapped_modules.append(Recorder(module))
+                else:
+                    wrapped_modules.append(module)
+
+            self.modules = wrapped_modules
+
+        if mode == "replay":
+            record_list = get_nested_key("config.recorder.replay", data)
+            if record_list is None:
+                record_list = get_nested_key("config.recorder.record", data)
+                
+            wrapped_modules = []
+            for module in self.modules:
+                if module._name in record_list:
+                    print(f"Wrapping {module._name} with replay")
+                    wrapped_modules.append(Replay(module))
+                else:
+                    wrapped_modules.append(module)
+
+            self.modules = wrapped_modules
+         
+
     def run(self, data):
+        # Wrap modules with recorder or replay modules depending on mode
+        self.wrap_modules_with_recorder(data)
+
         # Init all module
         for module in self.modules:
             if not module.check_initialized():
-                logging.critical(f"Module {module.name} did not call super constructor")
+                logging.critical(f"Module {module._name} did not call super constructor")
                 exit()
 
         # Start all modules
@@ -141,7 +178,7 @@ class Engine:
             # Verify its result
             # TODO: Use JSON Schema validation here
             assert type(results) is dict, (
-                "Module " + module.name + " must return a dictionary!"
+                "Module " + module._name + " must return a dictionary!"
             )
 
             # Validate module output with module output schema (only if we are supposed to run)

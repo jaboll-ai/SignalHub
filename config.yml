@@ -1,9 +1,17 @@
 engine:
   speed: 4
   history: 100
-  autoclose: True
+  autoclose: False
+recorder:
+  file: record/test.pickle
+  record:
+    - webcamCapture
+    - clock
+  replay:
+    - webcamCapture
+    - clock
 webcam:
   deviceIndex: 0
-  width: 1024
-  height: 768
-  dtype: float32
+  width: 640
+  height: 480
+  dtype: u8

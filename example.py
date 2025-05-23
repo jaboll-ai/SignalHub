@@ -1,6 +1,5 @@
 import numpy as np
-from engine import Engine, Module, EngineMode, GALY, get_nested_key
-from modules import ConfigParser, Webcam
+from engine import Engine, Module, EngineMode, GALY, get_nested_key, ConfigParser, Webcam, Recorder, Replay
 import numpy as np
 import argparse
 import cv2
@@ -8,8 +7,7 @@ import cv2
 
 class TerminateAfter(Module):
     def __init__(self, count):
-        super().__init__()
-        self.name = "TerminateAfter"
+        super().__init__(name="Terminate After")
         self.counter = count
         self.count = 0
         pass
@@ -66,13 +64,46 @@ class ImageSender(Module):
 
     def stop(self, data):
         pass
+    
+
+
+class Clock(Module):
+    def __init__(self):
+        super().__init__(outputSchema={"type": "object", "properties": {}})
+
+    def start(self, data):
+        self.counter = 0
+        return { }
+
+    def step(self, data):
+        galy = GALY()
+
+        galy.canvas("Clock", (640, 480), (0.0, 0.0, 0.0))
+
+        rad = self.counter / 10.0 * np.pi
+        x0, x1 = 320, int(320.0 + 160.0 * np.cos(rad))
+        y0, y1 = 240, int(240.0 + 160.0 * np.sin(rad))
+        galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
+
+        rad2 = self.counter / 60.0 * np.pi
+        x0, x1 = 320, int(320.0 + 80.0 * np.cos(rad2))
+        y0, y1 = 240, int(240.0 + 80.0 * np.sin(rad2))
+
+        galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
+
+        self.counter += 1
+        return { "clock": galy }
+
+    def stop(self, data):
+        pass    
 
 
 parser = argparse.ArgumentParser("Example Program")
-parser.add_argument("--mode", action="store", default="replay", required=True)
+parser.add_argument("--mode", action="store", default="none")
+parser.add_argument("--recorder.file", action="store")
 parser.add_argument("--engine.singlestep", action="store_true", default=False)
 parser.add_argument("--webcam.width", required=False)
-modules = [ConfigParser(parser), Webcam(), TerminateAfter(100)]
+modules = [ConfigParser(parser), Webcam(), Clock(), TerminateAfter(100)]
 
 
 engine = Engine(modules=modules, signals={})

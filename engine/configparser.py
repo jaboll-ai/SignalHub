@@ -1,7 +1,7 @@
 import argparse
 import yaml
 import os
-from engine import Module
+from .module import Module
 
 import logging
 
@@ -29,10 +29,10 @@ class ConfigParser(Module):
             outputSchema={
                 "type": "object",
                 "properties": {"config": {}},
-            }
+            },
+            name="Argument Parser"
         )
 
-        self.name = "Argument Parser"
         self.parser = argumentParser or argparse.ArgumentParser()
         self.parser.add_argument(
             "--cfg", action="store", help="Config file to parse", default="config.yml"

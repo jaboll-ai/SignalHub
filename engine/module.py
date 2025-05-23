@@ -1,9 +1,31 @@
+from re import sub
 import jsonschema
 import jsonschema.validators
 
 
+def camelCase(s):
+    s = sub(r"(_|-)+", " ", s).title().replace(" ", "")
+    return "".join([s[0].lower(), s[1:]])
+
+module_name_counter = {
+
+}
+def make_unique(name):
+    # First, make the name camel case
+    name = camelCase(name)
+
+    # Now make it unique by attaching a number
+    if name not in module_name_counter.keys():
+        module_name_counter[name] = 1
+        return name
+    else:
+        module_name_counter[name] += 1
+        return name + f"_{module_name_counter[name]}"
+
 class Module:
-    def __init__(self, inputSignals=None, outputSchema=None):
+    def __init__(self, inputSignals=None, outputSchema=None, name=None):
+        self._name = make_unique(name or self.__class__.__name__)
+
         self._initialized = True
 
         if outputSchema is None:
@@ -23,6 +45,7 @@ class Module:
                 outputSchema
             )
 
+        self.outputSchema = outputSchema
         self.inputSignals = inputSignals
 
         pass

@@ -3,7 +3,7 @@ import logging
 import cv2
 import numpy as np
 from .misc import get_nested_key
-from .galyQT import qt_add_canvas_entry, qt_display_canvas
+from .galyQT import qt_add_canvas_entry, qt_display_canvas, qt_add_layer_entry, qt_get_layer_visibility
 from uuid import uuid4
 
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +28,10 @@ class GALY:
     def __init__(self):
         self.commands = []
         pass
+
+    def layer(self, name):
+        assert type(name) == str, "Layer name must be a string"
+        self.commands.append(GALYBuffer(GALYCommand.LAYER, name=name))
 
     def blit(self, source, offset):
         if type(offset) == list and len(offset) == 2:
@@ -107,7 +111,6 @@ class GALYCanvas:
 
 
 currentCanvas, mainCanvas = None, None
-
 galyCanvases = {}
 
 
@@ -132,13 +135,33 @@ def process_canvas(kwargs, otherData):
         galyCanvases[name] = canvas
 
 
-def process_layer(kwargs, otherData):
-    pass
+currentLayer, mainLayer = None, None
+galyLayers = {}
+currentVisibility = True
 
+def process_layer(kwargs, otherData):
+    global currentLayer, mainLayer, galyLayers, currentVisibility
+
+    name = kwargs["name"]
+    currentLayer = name
+
+    if name not in galyLayers:
+        galyLayers[currentLayer] = True
+        
+        if mainLayer is None:
+            mainLayer = name
+
+        qt_add_layer_entry(name)
+        currentVisibility = True
+    else:
+        currentVisibility = qt_get_layer_visibility(currentLayer)
 
 def process_line(kwargs, otherData):
     if currentCanvas is None:
         logger.error("GALY: No canvas set on line command")
+        return
+    
+    if not currentVisibility:
         return
 
     cv2.line(currentCanvas.image, **kwargs)
@@ -148,6 +171,9 @@ def process_putText(kwargs, otherData):
     if currentCanvas is None:
         logger.error("GALY: No canvas set on putText command")
         return
+    
+    if not currentVisibility:
+        return
 
     cv2.putText(currentCanvas.image, **kwargs)
 
@@ -155,6 +181,9 @@ def process_putText(kwargs, otherData):
 def process_blit(kwargs, otherData):
     if currentCanvas is None:
         logger.error("GALY: No canvas set on blit command")
+        return
+    
+    if not currentVisibility:
         return
 
     source, offset = kwargs["source"], kwargs["offset"]
@@ -175,6 +204,7 @@ def process_blit(kwargs, otherData):
     currentCanvas.image[y0:y1, x0:x1] = image
 
 
+
 galyCommandTable = {
     GALYCommand.CANVAS: process_canvas,
     GALYCommand.LAYER: process_layer,
@@ -185,10 +215,11 @@ galyCommandTable = {
 
 
 def process_galy_stream(stream: GALY, otherData: dict):
-    global currentCanvas, mainCanvas
+    global currentCanvas, mainCanvas, currentLayer, mainLayer
 
     # Reset canvas and layer (do not silently fall over if a previous module has changed it)
     currentCanvas = mainCanvas
+    currentLayer = mainLayer
 
     # Iterate over all commands
     for buffer in stream.commands:

@@ -97,12 +97,14 @@ class Clock(Module):
         rad = -np.pi / 2.0 + 5.0 * self.counter / 99.0 * np.pi * 2.0
         x0, x1 = 320, int(320.0 + 160.0 * np.cos(rad))
         y0, y1 = 240, int(240.0 + 160.0 * np.sin(rad))
+        galy.layer("Minute Hand")
         galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
 
         rad2 = -np.pi / 2.0 + self.counter / 99.0 * np.pi * 2.0
         x0, x1 = 320, int(320.0 + 80.0 * np.cos(rad2))
         y0, y1 = 240, int(240.0 + 80.0 * np.sin(rad2))
 
+        galy.layer("Hour Hand")
         galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
 
         self.counter += 1
@@ -117,7 +119,7 @@ parser.add_argument("--mode", action="store", default="none")
 parser.add_argument("--recorder.file", action="store")
 parser.add_argument("--engine.singlestep", action="store_true", default=False)
 parser.add_argument("--webcam.width", required=False)
-modules = [ConfigParser(parser), ImageSender(), Clock(), TerminateAfter(100)]
+modules = [ConfigParser(parser), Clock(), TerminateAfter(100)]
 
 
 engine = Engine(modules=modules, signals={})

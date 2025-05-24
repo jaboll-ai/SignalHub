@@ -126,6 +126,10 @@ class MainWindow(OpenCVWindow):
         self.engine.step_forward()
         self.update_status_bar_message()
 
+    def redraw_galy(self):
+        self.engine.redraw_galy()
+        self.update_status_bar_message()
+
     def create_menu_bar(self):
         menubar = self.menuBar()
 
@@ -139,6 +143,10 @@ class MainWindow(OpenCVWindow):
         # Canvas menu
         self.canvas_menu = menubar.addMenu("Canvas")
         self.canvasData = {}
+
+        # Layer Menu
+        self.layer_menu = menubar.addMenu("Layer")
+        self.layerData = {}
 
     def display_canvas(self, name, image):
         if name not in self.canvasData:
@@ -180,7 +188,7 @@ class MainWindow(OpenCVWindow):
             action.setIcon(QIcon(ICON_NONCHECKED))
             self.canvasData[canvasName].window.close()
             self.canvasData[canvasName].window = None
-
+    
     def add_canvas_entry(self, name):
         canvas_action = QAction(name, self)
         canvas_action.setData({"canvasName": name})
@@ -194,6 +202,36 @@ class MainWindow(OpenCVWindow):
 
         canvas_action.triggered.connect(self.on_canvas_toggle)
         self.canvas_menu.addAction(canvas_action)
+
+    
+    
+    
+    
+    def on_layer_toggle(self):
+        action = self.sender()  # Get the QAction that triggered the handler
+        context = action.data()  # Retrieve the context data
+
+        layerName = context["layerName"]
+
+        if action.isChecked():  # If the action is checked (active)
+            action.setIcon(QIcon(ICON_CHECKED))
+            self.layerData[layerName] = True
+        else:
+            action.setIcon(QIcon(ICON_NONCHECKED))
+            self.layerData[layerName] = False
+
+        self.redraw_galy()
+
+    def add_layer_entry(self, name):
+        layer_action = QAction(name, self)
+        layer_action.setData({"layerName": name})
+        layer_action.setCheckable(True)
+        self.layerData[name] = True
+        layer_action.setChecked(True)
+        layer_action.setIcon(QIcon(ICON_CHECKED))
+
+        layer_action.triggered.connect(self.on_layer_toggle)
+        self.layer_menu.addAction(layer_action)
 
 
 app, window = None, None
@@ -210,6 +248,12 @@ def qt_display_canvas(image, name=None):
 
 def qt_add_canvas_entry(name):
     window.add_canvas_entry(name)
+
+def qt_add_layer_entry(name):
+    window.add_layer_entry(name)    
+
+def qt_get_layer_visibility(name):
+    return window.layerData.get(name, True)
 
 
 def run_qt_eventloop(engine, config):

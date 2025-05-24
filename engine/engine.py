@@ -32,6 +32,9 @@ class DataBuffer:
             return True
 
         return self.index == len(self.buffer) - 1
+    
+    def current(self):
+        return self.buffer[self.index]
 
     def step_forward(self):
         if self.index < len(self.buffer) - 1:
@@ -64,6 +67,10 @@ class Engine:
 
     def step_backward(self):
         data = self.buffer.step_backward()
+        process_galy(data)
+
+    def redraw_galy(self):
+        data = self.buffer.current()
         process_galy(data)
 
     def step_forward(self):

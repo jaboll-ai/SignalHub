@@ -10,21 +10,23 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def camelCase(s):
     s = sub(r"(_|-)+", " ", s).title().replace(" ", "")
     return "".join([s[0].lower(), s[1:]])
 
 
 open_recorder = []
-global_ledger = {
+global_ledger = {}
 
-}
 
 class Replay(Module):
     def __init__(self, childModule):
         super().__init__(
-            inputSignals = childModule.inputSignals, 
-            outputSchema=childModule.outputSchema, name = f"Replay ({childModule._name})")
+            inputSignals=childModule.inputSignals,
+            outputSchema=childModule.outputSchema,
+            name=f"Replay ({childModule._name})",
+        )
         self.child = childModule
         self.moduleName = camelCase(childModule._name)
 
@@ -39,7 +41,9 @@ class Replay(Module):
         open_recorder.append(self)
 
         if self.moduleName not in global_ledger:
-            logger.critical(f"Cannot replay module {self.child._name} as it was not serialized into provided file.")
+            logger.critical(
+                f"Cannot replay module {self.child._name} as it was not serialized into provided file."
+            )
             exit()
 
         self.currentIndex = 1
@@ -65,13 +69,15 @@ class Replay(Module):
 class Recorder(Module):
     def __init__(self, childModule):
         super().__init__(
-            inputSignals = childModule.inputSignals, 
-            outputSchema=childModule.outputSchema, name = f"Recorder ({childModule._name})")
+            inputSignals=childModule.inputSignals,
+            outputSchema=childModule.outputSchema,
+            name=f"Recorder ({childModule._name})",
+        )
         self.child = childModule
 
     def start(self, data):
         global global_ledger, open_recorder
-        
+
         self.moduleName = camelCase(self.child._name)
 
         global_ledger[self.moduleName] = []
@@ -102,9 +108,13 @@ class Recorder(Module):
 
         # If there is none left (we were the last), store the global ledger
         if not open_recorder:
-            directory = os.path.dirname(fileName)  # Extract the directory part of the path
+            directory = os.path.dirname(
+                fileName
+            )  # Extract the directory part of the path
             if not os.path.exists(directory):
-                os.makedirs(directory, exist_ok=True)  # Create all intermediate directories
+                os.makedirs(
+                    directory, exist_ok=True
+                )  # Create all intermediate directories
 
             print("Writing global ledger to ", fileName)
             with open(fileName, "wb") as f:

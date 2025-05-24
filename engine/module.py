@@ -7,9 +7,10 @@ def camelCase(s):
     s = sub(r"(_|-)+", " ", s).title().replace(" ", "")
     return "".join([s[0].lower(), s[1:]])
 
-module_name_counter = {
 
-}
+module_name_counter = {}
+
+
 def make_unique(name):
     # First, make the name camel case
     name = camelCase(name)
@@ -21,6 +22,7 @@ def make_unique(name):
     else:
         module_name_counter[name] += 1
         return name + f"_{module_name_counter[name]}"
+
 
 class Module:
     def __init__(self, inputSignals=None, outputSchema=None, name=None):

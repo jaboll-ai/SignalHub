@@ -54,7 +54,9 @@ class MainWindow(OpenCVWindow):
         speedText = get_speed_status_text(self.engineSpeed)
         memoryText = get_memory_text()
         bufferText = self.engine.get_buffer_status_text()
-        self.status_bar.showMessage(speedText + "           " + memoryText + "           " + bufferText)
+        self.status_bar.showMessage(
+            speedText + "           " + memoryText + "           " + bufferText
+        )
 
     def change_simulation_speed(self, newSpeed):
         self.engineSpeed = newSpeed

@@ -1,6 +1,6 @@
 from enum import Enum
-from .galy import process_galy, remove_galy_streams
-from .misc import get_nested_key
+from .galy import process_galy, remove_galy_streams, make_galy_streams_unique
+from .misc import get_nested_key, check_is_signal_is_exclusive
 from .galyQT import run_qt_eventloop, qt_quit
 from .configparser import ConfigParser  # Replace with the actual module name
 from .recorder import Recorder, Replay
@@ -9,8 +9,6 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
 
 
 class DataBuffer:
@@ -28,13 +26,11 @@ class DataBuffer:
 
         self.buffer.append(data)
         self.index = len(self.buffer) - 1
-        
-
 
     def is_at_end(self):
         if len(self.buffer) == 0:
             return True
-        
+
         return self.index == len(self.buffer) - 1
 
     def step_forward(self):
@@ -52,6 +48,7 @@ class DataBuffer:
     def len(self):
         return len(self.buffer)
 
+
 class Engine:
     def __init__(self, modules, signals):
         self.modules = modules
@@ -60,6 +57,7 @@ class Engine:
         self.buffer = DataBuffer()
         self.mode = EngineMode.RUN
         self.autoclose = False
+        self.exclusiveList = []
 
     def get_buffer_status_text(self):
         return f"Scan {self.buffer.index + 1} / {self.buffer.len()}"
@@ -89,7 +87,7 @@ class Engine:
                 data = module.start(data)
 
         mode = get_nested_key("config.mode", data) or None
-        
+
         if mode == "record":
             record_list = get_nested_key("config.recorder.record", data)
             wrapped_modules = []
@@ -106,7 +104,7 @@ class Engine:
             record_list = get_nested_key("config.recorder.replay", data)
             if record_list is None:
                 record_list = get_nested_key("config.recorder.record", data)
-                
+
             wrapped_modules = []
             for module in self.modules:
                 if module._name in record_list:
@@ -116,7 +114,6 @@ class Engine:
                     wrapped_modules.append(module)
 
             self.modules = wrapped_modules
-         
 
     def run(self, data):
         # Wrap modules with recorder or replay modules depending on mode
@@ -125,7 +122,9 @@ class Engine:
         # Init all module
         for module in self.modules:
             if not module.check_initialized():
-                logging.critical(f"Module {module._name} did not call super constructor")
+                logging.critical(
+                    f"Module {module._name} did not call super constructor"
+                )
                 exit()
 
         # Start all modules
@@ -158,6 +157,9 @@ class Engine:
         return stripped_data
 
     def step(self, data, start=False):
+        # Reset the exclusiv list
+        self.exclusiveList = { }
+
         # Iterate all modules
         for module in self.modules:
             # Only present the requested data to this module
@@ -184,6 +186,20 @@ class Engine:
             # Validate module output with module output schema (only if we are supposed to run)
             if mode == EngineMode.RUN:
                 module.outputValidator.validate(remove_galy_streams(results))
+
+            # Make multiple GALY streams unique names
+            results = make_galy_streams_unique(results)    
+
+            # Now make sure we don´t overwrite other signals unless explicitly allowed
+            for signal in results.keys():
+                if signal in self.exclusiveList.keys():
+                    logger.error(
+                        f"Module {module._name} must not overwrite exclusive signal {signal} previously written by {self.exclusiveList[signal]}"
+                    )
+                    exit()
+                else:
+                    if check_is_signal_is_exclusive(signal, module.outputSchema):
+                        self.exclusiveList[signal] = module._name
 
             # Update the dictionary
             data.update(results)

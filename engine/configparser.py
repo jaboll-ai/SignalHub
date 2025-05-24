@@ -30,7 +30,7 @@ class ConfigParser(Module):
                 "type": "object",
                 "properties": {"config": {}},
             },
-            name="Argument Parser"
+            name="Argument Parser",
         )
 
         self.parser = argumentParser or argparse.ArgumentParser()

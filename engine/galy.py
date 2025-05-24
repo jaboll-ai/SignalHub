@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from .misc import get_nested_key
 from .galyQT import qt_add_canvas_entry, qt_display_canvas
+from uuid import uuid4
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -207,6 +208,17 @@ def remove_galy_streams(data):
             remaining_signals[key] = stream
 
     return remaining_signals
+
+def make_galy_streams_unique(data):
+    signals = {}
+    for key, stream in data.items():
+        if not isinstance(stream, GALY):
+            signals[key] = stream
+        else:
+            unique_key = uuid4().hex
+            signals[unique_key] = stream
+
+    return signals
 
 
 def process_galy(data):

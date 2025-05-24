@@ -1,5 +1,15 @@
 import numpy as np
-from engine import Engine, Module, EngineMode, GALY, get_nested_key, ConfigParser, Webcam, Recorder, Replay
+from engine import (
+    Engine,
+    Module,
+    EngineMode,
+    GALY,
+    get_nested_key,
+    ConfigParser,
+    Webcam,
+    Recorder,
+    Replay,
+)
 import numpy as np
 import argparse
 import cv2
@@ -14,7 +24,7 @@ class TerminateAfter(Module):
 
     def start(self, data):
         self.count = 0
-        return { }
+        return {}
 
     def step(self, data):
         self.count += 1
@@ -29,7 +39,12 @@ class TerminateAfter(Module):
 
 class ImageSender(Module):
     def __init__(self):
-        super().__init__(outputSchema={"type": "object", "properties": {"image": {}}})
+        super().__init__(
+            outputSchema={"type": "object", "properties": {
+                "image": {}, "A": { "exclusive": False }
+                }
+              }
+        )
 
     def start(self, data):
         self.shape = (640, 480)
@@ -58,44 +73,43 @@ class ImageSender(Module):
 
         galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
 
-        #print(f"Step {self.counter}")
+        # print(f"Step {self.counter}")
         self.counter += 1
-        return {"image": self.image, "galy": galy}
+        return {"image": self.image, "galy": galy, "A": 1 }
 
     def stop(self, data):
         pass
-    
 
 
 class Clock(Module):
     def __init__(self):
-        super().__init__(outputSchema={"type": "object", "properties": {}})
+        super().__init__(outputSchema={"type": "object", "properties": { "A" : {} }})
 
     def start(self, data):
         self.counter = 0
-        return { }
+        return {}
 
     def step(self, data):
         galy = GALY()
 
         galy.canvas("Clock", (640, 480), (0.0, 0.0, 0.0))
 
-        rad = self.counter / 10.0 * np.pi
+        rad = -np.pi / 2.0 + 5.0 * self.counter / 99.0 * np.pi * 2.0
         x0, x1 = 320, int(320.0 + 160.0 * np.cos(rad))
         y0, y1 = 240, int(240.0 + 160.0 * np.sin(rad))
         galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
 
-        rad2 = self.counter / 60.0 * np.pi
+        rad2 = -np.pi / 2.0 + self.counter / 99.0 * np.pi * 2.0
         x0, x1 = 320, int(320.0 + 80.0 * np.cos(rad2))
         y0, y1 = 240, int(240.0 + 80.0 * np.sin(rad2))
 
         galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
 
         self.counter += 1
-        return { "clock": galy }
+        return {"clock": galy, "A": 3 }
 
     def stop(self, data):
-        pass    
+        pass
 
 
 parser = argparse.ArgumentParser("Example Program")
@@ -103,7 +117,7 @@ parser.add_argument("--mode", action="store", default="none")
 parser.add_argument("--recorder.file", action="store")
 parser.add_argument("--engine.singlestep", action="store_true", default=False)
 parser.add_argument("--webcam.width", required=False)
-modules = [ConfigParser(parser), Webcam(), Clock(), TerminateAfter(100)]
+modules = [ConfigParser(parser), ImageSender(), Clock(), TerminateAfter(100)]
 
 
 engine = Engine(modules=modules, signals={})

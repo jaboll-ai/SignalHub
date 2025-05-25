@@ -4,7 +4,7 @@ import argparse
 import yaml
 import os
 from io import StringIO
-from configparser import ConfigParser, set_nested_key
+from .configparser import ConfigParser, set_nested_key
 import logging
 
 

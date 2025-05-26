@@ -64,7 +64,8 @@ class OpenCVWindow(QMainWindow):
 
     def update_image(self, image):
         # Convert the image from BGR to RGB
-        image = np.uint8(cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX))
+        #/image = np.uint8(cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX))
+        image = np.uint8(image * 255.0)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Convert the RGB image to a QImage

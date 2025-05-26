@@ -16,6 +16,9 @@ class GALYCommand(Enum):
     CANVAS = (3,)
     PUTTEXT = (4,)
     BLIT = (5,)
+    SET_LAYER_AFFINE_MAPPING = (6,)
+    MAHALANOBIS = (7,)
+    CIRLCE = (8,)
 
 
 class GALYBuffer:
@@ -32,6 +35,12 @@ class GALY:
     def layer(self, name):
         assert type(name) == str, "Layer name must be a string"
         self.commands.append(GALYBuffer(GALYCommand.LAYER, name=name))
+
+    def set_layer_affine_mapping(self, mapping):
+        assert type(mapping) == np.ndarray, "Mapping must be a numpy matrix"
+        assert mapping.shape[0] == 2, "Mapping must be a 2x3 matrix"
+        assert mapping.shape[1] == 3, "Mapping must be a 2x3 matrix"
+        self.commands.append(GALYBuffer(GALYCommand.SET_LAYER_AFFINE_MAPPING, mapping=mapping))
 
     def blit(self, source, offset):
         if type(offset) == list and len(offset) == 2:
@@ -56,6 +65,59 @@ class GALY:
             GALYBuffer(GALYCommand.CANVAS, name=name, shape=shape, color=color)
         )
 
+    def circle(self, org, radius, color, thickness=1, **kwargs):
+        if type(org) == tuple:
+            org = np.array([[org[0], org[1]]])
+
+        assert type(org) == np.ndarray, "Origin must be a numpy array"
+        org = org.reshape(1,-1)
+
+        assert org.shape[0] == 1, "Origin must be 1x2 matrix"
+        assert org.shape[1] == 2, "Origin must be 1x2 matrix"
+
+        assert type(radius) == int, "Radius must be integer"
+
+        assert type(color) == tuple, "Color must be a tuple (R, G, B)"
+        assert len(color) == 3, "Color must be a tuple (R, G, B)"
+
+        kwargs["center"] = org
+        kwargs["radius"] = radius
+        kwargs["thickness"] = thickness
+        kwargs["color"] = color
+
+        self.commands.append(GALYBuffer(GALYCommand.CIRLCE, **kwargs))   
+
+    def mahalanobis(self, org, covariance, color, scale=1.0, thickness=1, **kwargs):
+        if type(org) == tuple:
+            org = np.array([[org[0], org[1]]])
+
+        assert type(org) == np.ndarray, "Origin must be a numpy array"
+        org = org.reshape(1,-1)
+
+        assert org.shape[0] == 1, "Origin must be 1x2 matrix"
+        assert org.shape[1] == 2, "Origin must be 1x2 matrix"
+
+        assert type(scale) == float, "Scale must be float"
+
+        assert type(covariance) == np.ndarray, "Covariance must be a numpy array"
+        assert covariance.shape[0] == 2, "Covariance must be 2x2 matrix"
+        assert covariance.shape[1] == 2, "Covariance must be 2x2 matrix"
+
+        if type(color) == np.ndarray and color.shape[0] == 3:
+            color = color.reshape(-1)
+            color = (color[0], color[1], color[2])
+
+        assert type(color) == tuple, "Color must be a tuple (R, G, B)"
+        assert len(color) == 3, "Color must be a tuple (R, G, B)"
+
+        kwargs["org"] = org
+        kwargs["scale"] = scale
+        kwargs["covariance"] = covariance
+        kwargs["color"] = color
+        kwargs["thickness"] = thickness
+
+        self.commands.append(GALYBuffer(GALYCommand.MAHALANOBIS, **kwargs))        
+        
     def putText(
         self,
         text,
@@ -79,7 +141,15 @@ class GALY:
         if type(pt1) == list and len(pt1) == 2:
             pt1 = (pt1[0], pt1[1])
 
+        if type(pt1) == np.ndarray:
+            pt1 = pt1.reshape(-1)
+            pt1 = (pt1[0], pt1[1])
+
         if type(pt2) == list and len(pt2) == 2:
+            pt2 = (pt2[0], pt2[1])
+
+        if type(pt2) == np.ndarray:
+            pt2 = pt2.reshape(-1)
             pt2 = (pt2[0], pt2[1])
 
         assert type(pt1) == tuple, "startPoint must be a tuple (W, H)"
@@ -93,7 +163,7 @@ class GALY:
 
         kwargs["pt1"] = pt1
         kwargs["pt2"] = pt2
-        kwargs["color"] = color
+        kwargs["color"] = (color)
         kwargs["thickness"] = thickness
 
         self.commands.append(GALYBuffer(GALYCommand.LINE, **kwargs))
@@ -137,7 +207,17 @@ def process_canvas(kwargs, otherData):
 
 currentLayer, mainLayer = None, None
 galyLayers = {}
+layerMappings = {}
 currentVisibility = True
+
+def apply_layer_mapping(pt):
+    if currentLayer in layerMappings.keys():
+        if type(pt) is np.ndarray:
+            pt = pt.reshape(-1)
+        mapping = layerMappings[currentLayer]
+        pt = mapping @ np.array([[pt[0], pt[1], 1.0]]).T
+    
+    return (int(np.round(pt[0])), int(np.round(pt[1])))
 
 def process_layer(kwargs, otherData):
     global currentLayer, mainLayer, galyLayers, currentVisibility
@@ -164,6 +244,10 @@ def process_line(kwargs, otherData):
     if not currentVisibility:
         return
 
+    kwargs = kwargs.copy()
+    kwargs["pt1"] = apply_layer_mapping(kwargs["pt1"])
+    kwargs["pt2"] = apply_layer_mapping(kwargs["pt2"])    
+
     cv2.line(currentCanvas.image, **kwargs)
 
 
@@ -175,6 +259,8 @@ def process_putText(kwargs, otherData):
     if not currentVisibility:
         return
 
+    kwargs = kwargs.copy()
+    kwargs["org"] = apply_layer_mapping(kwargs["org"])
     cv2.putText(currentCanvas.image, **kwargs)
 
 
@@ -203,6 +289,48 @@ def process_blit(kwargs, otherData):
     # Do the actual blit
     currentCanvas.image[y0:y1, x0:x1] = image
 
+def process_set_layer_affine_mapping(kwargs, otherData):
+    if currentLayer is None:
+        logger.error("GALY: No layer set on set_layer_affine_mapping command")
+        return
+    
+    mapping = kwargs["mapping"]
+    layerMappings[currentLayer] = mapping
+
+
+def process_mahalanobis(kwargs, otherData):
+    if currentCanvas is None:
+        logger.error("GALY: No canvas set on mahalanobis command")
+        return
+    
+    if not currentVisibility:
+        return
+
+    chol = np.linalg.cholesky(kwargs["covariance"])
+    mu = kwargs["org"].reshape(-1,1)
+    old_point = None
+    for rad in np.linspace(0.0, 2.0 * np.pi, 120):
+        pt = mu + kwargs["scale"] * chol @ np.array([[np.cos(rad), np.sin(rad)]]).T
+        pt = apply_layer_mapping(pt)
+        
+        if old_point is not None:
+            cv2.line(currentCanvas.image, pt, old_point, kwargs["color"], kwargs["thickness"])
+
+        old_point = pt
+
+def process_circle(kwargs, otherData):
+    if currentCanvas is None:
+        logger.error("GALY: No canvas set on mahalanobis command")
+        return
+    
+    if not currentVisibility:
+        return
+
+    kwargs = kwargs.copy()
+    kwargs["center"] = apply_layer_mapping(kwargs["center"])
+    
+    cv2.circle(currentCanvas.image, **kwargs)
+    
 
 
 galyCommandTable = {
@@ -211,6 +339,9 @@ galyCommandTable = {
     GALYCommand.LINE: process_line,
     GALYCommand.PUTTEXT: process_putText,
     GALYCommand.BLIT: process_blit,
+    GALYCommand.SET_LAYER_AFFINE_MAPPING: process_set_layer_affine_mapping,
+    GALYCommand.MAHALANOBIS: process_mahalanobis,
+    GALYCommand.CIRLCE: process_circle
 }
 
 

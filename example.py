@@ -1,5 +1,5 @@
 import numpy as np
-from engine import (
+from SignalHub import (
     Engine,
     Module,
     EngineMode,

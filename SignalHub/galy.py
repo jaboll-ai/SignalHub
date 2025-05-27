@@ -73,8 +73,10 @@ class GALY:
         )
 
     def circle(self, org, radius, color, thickness=1, **kwargs):
-        if type(org) == tuple:
+        if type(org) == tuple or type(org) == list:
             org = np.array([[org[0], org[1]]])
+
+          
 
         assert type(org) == np.ndarray, "Origin must be a numpy array"
         org = org.reshape(1, -1)
@@ -222,6 +224,7 @@ def apply_layer_mapping(pt):
     if currentLayer in layerMappings.keys():
         if type(pt) is np.ndarray:
             pt = pt.reshape(-1)
+            
         mapping = layerMappings[currentLayer]
         pt = mapping @ np.array([[pt[0], pt[1], 1.0]]).T
 

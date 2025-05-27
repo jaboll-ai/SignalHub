@@ -37,9 +37,9 @@ class GALY:
         self.commands = []
         pass
 
-    def layer(self, name):
+    def layer(self, name, alwaysVisible = False):
         assert type(name) == str, "Layer name must be a string"
-        self.commands.append(GALYBuffer(GALYCommand.LAYER, name=name))
+        self.commands.append(GALYBuffer(GALYCommand.LAYER, name=name, alwaysVisible=alwaysVisible))
 
     def set_layer_affine_mapping(self, mapping):
         assert type(mapping) == np.ndarray, "Mapping must be a numpy matrix"
@@ -232,13 +232,15 @@ def process_layer(kwargs, otherData):
     global currentLayer, mainLayer, galyLayers, currentVisibility
 
     name = kwargs["name"]
+    alwaysVisible = kwargs["alwaysVisible"]
+
     currentLayer = name
 
     if name not in galyLayers:
         if mainLayer is None:
             mainLayer = name
 
-        currentVisibility = qt_add_layer_entry(name)
+        currentVisibility = qt_add_layer_entry(name, alwaysVisible)
         galyLayers[currentLayer] = currentVisibility
     else:
         currentVisibility = qt_get_layer_visibility(currentLayer)

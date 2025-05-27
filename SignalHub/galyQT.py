@@ -239,7 +239,11 @@ class MainWindow(OpenCVWindow):
 
         self.redraw_galy()
 
-    def add_layer_entry(self, name):
+    def add_layer_entry(self, name, alwaysVisible):
+        if alwaysVisible:
+            self.layerData[name] = True
+            return True
+        
         key = f"layers/{name}"
         visibility = (
             self.settings.value(key, type=bool) if self.settings.contains(key) else True
@@ -274,8 +278,8 @@ def qt_add_canvas_entry(name):
     window.add_canvas_entry(name)
 
 
-def qt_add_layer_entry(name):
-    return window.add_layer_entry(name)
+def qt_add_layer_entry(name, alwaysVisible):
+    return window.add_layer_entry(name, alwaysVisible)
 
 
 def qt_get_layer_visibility(name):

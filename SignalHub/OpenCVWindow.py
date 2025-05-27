@@ -37,6 +37,9 @@ class OpenCVWindow(QMainWindow):
         else:
             self.settings = settings
 
+        self.targetWidth, self.targetHeight = 1280, 1280
+        #self.setMinimumSize(400, 300)  # Set a custom minimum size smaller than layout
+
         # Load the window position and size from settings
         self.load_window_settings()
 
@@ -70,6 +73,10 @@ class OpenCVWindow(QMainWindow):
 
         # Convert the RGB image to a QImage
         h, w, ch = image.shape
+        if self.targetWidth != w or self.targetHeight != h:
+            w, h = self.targetWidth, self.targetHeight
+            image = cv2.resize(image, (w, h))
+
         bytes_per_line = ch * w
         q_image = QImage(image.data, w, h, bytes_per_line, QImage.Format_RGB888)
 
@@ -87,6 +94,7 @@ class OpenCVWindow(QMainWindow):
     def set_fixed_size(self):
         # Lock the window size after the layout has been updated
         self.setFixedSize(self.size())  # Lock the window size to the current size
+        pass
 
     def keyPressEvent(self, event):
         if self.mainWindow is not None:

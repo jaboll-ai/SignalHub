@@ -226,7 +226,10 @@ def apply_layer_mapping(pt):
             pt = pt.reshape(-1)
             
         mapping = layerMappings[currentLayer]
-        pt = mapping @ np.array([[pt[0], pt[1], 1.0]]).T
+        pt = np.float64(np.array([[pt[0], pt[1], 1.0]]).T)
+        #print(mapping.dtype, pt.dtype)
+
+        pt = mapping @ pt
 
     return (int(np.round(pt[0])), int(np.round(pt[1])))
 

@@ -226,13 +226,11 @@ def process_layer(kwargs, otherData):
     currentLayer = name
 
     if name not in galyLayers:
-        galyLayers[currentLayer] = True
-        
         if mainLayer is None:
             mainLayer = name
-
-        qt_add_layer_entry(name)
-        currentVisibility = True
+        
+        currentVisibility = qt_add_layer_entry(name)
+        galyLayers[currentLayer] = currentVisibility
     else:
         currentVisibility = qt_get_layer_visibility(currentLayer)
 

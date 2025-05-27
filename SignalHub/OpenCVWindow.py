@@ -11,7 +11,7 @@ import numpy as np
 
 
 class OpenCVWindow(QMainWindow):
-    def __init__(self, mainWindow, title):
+    def __init__(self, mainWindow, title, applicationName = "SignalHub", settings = None):
         super().__init__()
 
         self.mainWindow = mainWindow
@@ -31,8 +31,16 @@ class OpenCVWindow(QMainWindow):
         self.layout.setSpacing(0)
         self.central_widget.setLayout(self.layout)
 
+        # Centralized settings
+        if settings is None:
+            self.settings = QSettings("DMUSoftware", applicationName)
+        else:
+            self.settings = settings
+
         # Load the window position and size from settings
         self.load_window_settings()
+
+        
 
     def closeEvent(self, event):
         self.save_window_settings()
@@ -45,22 +53,16 @@ class OpenCVWindow(QMainWindow):
         """
         Save the window's position and size using QSettings.
         """
-        settings = QSettings(
-            "DMUSoftware", "SignalHub"
-        )  # You can replace with your application name
         key = self.windowTitle() + "/pos"
-        settings.setValue(key, self.pos())  # Save the window position
+        self.settings.setValue(key, self.pos())  # Save the window position
 
     def load_window_settings(self):
         """
         Load the window's position and size from QSettings.
         """
-        settings = QSettings(
-            "DMUSoftware", "SignalHub"
-        )  # You can replace with your application name
         key = self.windowTitle() + "/pos"
-        if settings.contains(key):
-            self.move(settings.value(key))  # Restore the window position
+        if self.settings.contains(key):
+            self.move(self.settings.value(key))  # Restore the window position
 
     def update_image(self, image):
         # Convert the image from BGR to RGB

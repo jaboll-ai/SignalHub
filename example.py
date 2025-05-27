@@ -40,10 +40,10 @@ class TerminateAfter(Module):
 class ImageSender(Module):
     def __init__(self):
         super().__init__(
-            outputSchema={"type": "object", "properties": {
-                "image": {}, "A": { "exclusive": False }
-                }
-              }
+            outputSchema={
+                "type": "object",
+                "properties": {"image": {}, "A": {"exclusive": False}},
+            }
         )
 
     def start(self, data):
@@ -75,7 +75,7 @@ class ImageSender(Module):
 
         # print(f"Step {self.counter}")
         self.counter += 1
-        return {"image": self.image, "galy": galy, "A": 1 }
+        return {"image": self.image, "galy": galy, "A": 1}
 
     def stop(self, data):
         pass
@@ -83,7 +83,7 @@ class ImageSender(Module):
 
 class Clock(Module):
     def __init__(self):
-        super().__init__(outputSchema={"type": "object", "properties": { "A" : {} }})
+        super().__init__(outputSchema={"type": "object", "properties": {"A": {}}})
 
     def start(self, data):
         self.counter = 0
@@ -108,7 +108,7 @@ class Clock(Module):
         galy.line((x0, y0), (x1, y1), (1.0, 0.0, 0.0), 2)
 
         self.counter += 1
-        return {"clock": galy, "A": 3 }
+        return {"clock": galy, "A": 3}
 
     def stop(self, data):
         pass

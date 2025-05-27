@@ -3,7 +3,12 @@ import logging
 import cv2
 import numpy as np
 from .misc import get_nested_key
-from .galyQT import qt_add_canvas_entry, qt_display_canvas, qt_add_layer_entry, qt_get_layer_visibility
+from .galyQT import (
+    qt_add_canvas_entry,
+    qt_display_canvas,
+    qt_add_layer_entry,
+    qt_get_layer_visibility,
+)
 from uuid import uuid4
 
 logging.basicConfig(level=logging.INFO)
@@ -40,7 +45,9 @@ class GALY:
         assert type(mapping) == np.ndarray, "Mapping must be a numpy matrix"
         assert mapping.shape[0] == 2, "Mapping must be a 2x3 matrix"
         assert mapping.shape[1] == 3, "Mapping must be a 2x3 matrix"
-        self.commands.append(GALYBuffer(GALYCommand.SET_LAYER_AFFINE_MAPPING, mapping=mapping))
+        self.commands.append(
+            GALYBuffer(GALYCommand.SET_LAYER_AFFINE_MAPPING, mapping=mapping)
+        )
 
     def blit(self, source, offset):
         if type(offset) == list and len(offset) == 2:
@@ -70,7 +77,7 @@ class GALY:
             org = np.array([[org[0], org[1]]])
 
         assert type(org) == np.ndarray, "Origin must be a numpy array"
-        org = org.reshape(1,-1)
+        org = org.reshape(1, -1)
 
         assert org.shape[0] == 1, "Origin must be 1x2 matrix"
         assert org.shape[1] == 2, "Origin must be 1x2 matrix"
@@ -85,14 +92,14 @@ class GALY:
         kwargs["thickness"] = thickness
         kwargs["color"] = color
 
-        self.commands.append(GALYBuffer(GALYCommand.CIRLCE, **kwargs))   
+        self.commands.append(GALYBuffer(GALYCommand.CIRLCE, **kwargs))
 
     def mahalanobis(self, org, covariance, color, scale=1.0, thickness=1, **kwargs):
         if type(org) == tuple:
             org = np.array([[org[0], org[1]]])
 
         assert type(org) == np.ndarray, "Origin must be a numpy array"
-        org = org.reshape(1,-1)
+        org = org.reshape(1, -1)
 
         assert org.shape[0] == 1, "Origin must be 1x2 matrix"
         assert org.shape[1] == 2, "Origin must be 1x2 matrix"
@@ -116,8 +123,8 @@ class GALY:
         kwargs["color"] = color
         kwargs["thickness"] = thickness
 
-        self.commands.append(GALYBuffer(GALYCommand.MAHALANOBIS, **kwargs))        
-        
+        self.commands.append(GALYBuffer(GALYCommand.MAHALANOBIS, **kwargs))
+
     def putText(
         self,
         text,
@@ -163,7 +170,7 @@ class GALY:
 
         kwargs["pt1"] = pt1
         kwargs["pt2"] = pt2
-        kwargs["color"] = (color)
+        kwargs["color"] = color
         kwargs["thickness"] = thickness
 
         self.commands.append(GALYBuffer(GALYCommand.LINE, **kwargs))
@@ -210,14 +217,16 @@ galyLayers = {}
 layerMappings = {}
 currentVisibility = True
 
+
 def apply_layer_mapping(pt):
     if currentLayer in layerMappings.keys():
         if type(pt) is np.ndarray:
             pt = pt.reshape(-1)
         mapping = layerMappings[currentLayer]
         pt = mapping @ np.array([[pt[0], pt[1], 1.0]]).T
-    
+
     return (int(np.round(pt[0])), int(np.round(pt[1])))
+
 
 def process_layer(kwargs, otherData):
     global currentLayer, mainLayer, galyLayers, currentVisibility
@@ -228,23 +237,24 @@ def process_layer(kwargs, otherData):
     if name not in galyLayers:
         if mainLayer is None:
             mainLayer = name
-        
+
         currentVisibility = qt_add_layer_entry(name)
         galyLayers[currentLayer] = currentVisibility
     else:
         currentVisibility = qt_get_layer_visibility(currentLayer)
 
+
 def process_line(kwargs, otherData):
     if currentCanvas is None:
         logger.error("GALY: No canvas set on line command")
         return
-    
+
     if not currentVisibility:
         return
 
     kwargs = kwargs.copy()
     kwargs["pt1"] = apply_layer_mapping(kwargs["pt1"])
-    kwargs["pt2"] = apply_layer_mapping(kwargs["pt2"])    
+    kwargs["pt2"] = apply_layer_mapping(kwargs["pt2"])
 
     cv2.line(currentCanvas.image, **kwargs)
 
@@ -253,7 +263,7 @@ def process_putText(kwargs, otherData):
     if currentCanvas is None:
         logger.error("GALY: No canvas set on putText command")
         return
-    
+
     if not currentVisibility:
         return
 
@@ -266,7 +276,7 @@ def process_blit(kwargs, otherData):
     if currentCanvas is None:
         logger.error("GALY: No canvas set on blit command")
         return
-    
+
     if not currentVisibility:
         return
 
@@ -287,11 +297,12 @@ def process_blit(kwargs, otherData):
     # Do the actual blit
     currentCanvas.image[y0:y1, x0:x1] = image
 
+
 def process_set_layer_affine_mapping(kwargs, otherData):
     if currentLayer is None:
         logger.error("GALY: No layer set on set_layer_affine_mapping command")
         return
-    
+
     mapping = kwargs["mapping"]
     layerMappings[currentLayer] = mapping
 
@@ -300,35 +311,37 @@ def process_mahalanobis(kwargs, otherData):
     if currentCanvas is None:
         logger.error("GALY: No canvas set on mahalanobis command")
         return
-    
+
     if not currentVisibility:
         return
 
     chol = np.linalg.cholesky(kwargs["covariance"])
-    mu = kwargs["org"].reshape(-1,1)
+    mu = kwargs["org"].reshape(-1, 1)
     old_point = None
     for rad in np.linspace(0.0, 2.0 * np.pi, 120):
         pt = mu + kwargs["scale"] * chol @ np.array([[np.cos(rad), np.sin(rad)]]).T
         pt = apply_layer_mapping(pt)
-        
+
         if old_point is not None:
-            cv2.line(currentCanvas.image, pt, old_point, kwargs["color"], kwargs["thickness"])
+            cv2.line(
+                currentCanvas.image, pt, old_point, kwargs["color"], kwargs["thickness"]
+            )
 
         old_point = pt
+
 
 def process_circle(kwargs, otherData):
     if currentCanvas is None:
         logger.error("GALY: No canvas set on mahalanobis command")
         return
-    
+
     if not currentVisibility:
         return
 
     kwargs = kwargs.copy()
     kwargs["center"] = apply_layer_mapping(kwargs["center"])
-    
+
     cv2.circle(currentCanvas.image, **kwargs)
-    
 
 
 galyCommandTable = {
@@ -339,7 +352,7 @@ galyCommandTable = {
     GALYCommand.BLIT: process_blit,
     GALYCommand.SET_LAYER_AFFINE_MAPPING: process_set_layer_affine_mapping,
     GALYCommand.MAHALANOBIS: process_mahalanobis,
-    GALYCommand.CIRLCE: process_circle
+    GALYCommand.CIRLCE: process_circle,
 }
 
 
@@ -368,6 +381,7 @@ def remove_galy_streams(data):
             remaining_signals[key] = stream
 
     return remaining_signals
+
 
 def make_galy_streams_unique(data):
     signals = {}

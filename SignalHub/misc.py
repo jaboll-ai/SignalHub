@@ -13,25 +13,26 @@ def get_nested_key(key, data):
 
     return current_data
 
+
 def check_is_signal_is_exclusive(signal, schema):
     if not isinstance(schema, dict):
         return True
 
     if schema.get("type") != "object":
         return True
-    
+
     properties = schema.get("properties")
     if properties is None:
         return True
 
     if not isinstance(properties, dict):
-        return True    
-    
+        return True
+
     signalSchema = properties.get(signal)
     if signalSchema is None:
         return True
-    
+
     if not isinstance(signalSchema, dict):
         return True
-        
+
     return signalSchema.get("exclusive", True)

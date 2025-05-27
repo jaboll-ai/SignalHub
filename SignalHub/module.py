@@ -59,10 +59,10 @@ class Module:
         return True
 
     def start(self, data):
-        return { }
+        return {}
 
     def step(self, data):
-        return { }
+        return {}
 
     def stop(self, data):
-        return { }
+        return {}

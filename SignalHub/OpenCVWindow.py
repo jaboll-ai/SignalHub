@@ -11,7 +11,7 @@ import numpy as np
 
 
 class OpenCVWindow(QMainWindow):
-    def __init__(self, mainWindow, title, applicationName = "SignalHub", settings = None):
+    def __init__(self, mainWindow, title, applicationName="SignalHub", settings=None):
         super().__init__()
 
         self.mainWindow = mainWindow
@@ -40,8 +40,6 @@ class OpenCVWindow(QMainWindow):
         # Load the window position and size from settings
         self.load_window_settings()
 
-        
-
     def closeEvent(self, event):
         self.save_window_settings()
         if self.mainWindow is not None:
@@ -66,7 +64,7 @@ class OpenCVWindow(QMainWindow):
 
     def update_image(self, image):
         # Convert the image from BGR to RGB
-        #/image = np.uint8(cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX))
+        # /image = np.uint8(cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX))
         image = np.uint8(image * 255.0)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 

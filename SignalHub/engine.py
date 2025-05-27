@@ -32,7 +32,7 @@ class DataBuffer:
             return True
 
         return self.index == len(self.buffer) - 1
-    
+
     def current(self):
         return self.buffer[self.index]
 
@@ -165,7 +165,7 @@ class Engine:
 
     def step(self, data, start=False):
         # Reset the exclusiv list
-        self.exclusiveList = { }
+        self.exclusiveList = {}
 
         # Iterate all modules
         for module in self.modules:
@@ -195,7 +195,7 @@ class Engine:
                 module.outputValidator.validate(remove_galy_streams(results))
 
             # Make multiple GALY streams unique names
-            results = make_galy_streams_unique(results)    
+            results = make_galy_streams_unique(results)
 
             # Now make sure we don´t overwrite other signals unless explicitly allowed
             for signal in results.keys():

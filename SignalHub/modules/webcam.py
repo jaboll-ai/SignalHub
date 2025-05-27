@@ -13,7 +13,7 @@ class Webcam(Module):
         super().__init__(
             inputSignals=["config"],
             outputSchema={"type": "object", "properties": {outputSignal: {}}},
-            name="Webcam Capture"
+            name="Webcam Capture",
         )
 
         self.outputSignal = outputSignal
@@ -24,7 +24,7 @@ class Webcam(Module):
             get_nested_key("config.webcam.deviceIndex", data) or 0
         )
 
-        return { }
+        return {}
 
     def step(self, data):
         # Read next image from the Webcam
@@ -47,7 +47,7 @@ class Webcam(Module):
         if dtype == "float32" or dtype == "f32":
             image = np.float32(image / 255.0)
         elif dtype == "uint8" or dtype == "u8":
-            pass # Nothing to do here
+            pass  # Nothing to do here
         else:
             logger.critical(f"Webcam: Unknown Target Datatype {dtype}")
             exit()

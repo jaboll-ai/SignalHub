@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import (
     QApplication,
     QAction,
     QStatusBar,
-    
 )
 from PyQt5.QtCore import Qt, QTimer
 from .OpenCVWindow import OpenCVWindow
@@ -22,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 ICON_NONCHECKED = None
-#ICON_CHECKED = "icons/healthy.png"
+# ICON_CHECKED = "icons/healthy.png"
 
 
 class CanvasWindowData:
@@ -37,7 +36,7 @@ class MainWindow(OpenCVWindow):
         applicationName = get_nested_key("applicationame", config) or "SignalHub"
         print("Application Name: ", applicationName)
 
-        super().__init__(None, "Main", applicationName = applicationName)
+        super().__init__(None, "Main", applicationName=applicationName)
 
         self.singleStep = False
 
@@ -53,8 +52,6 @@ class MainWindow(OpenCVWindow):
         self.timer.timeout.connect(self.step)  # Method to update image
 
         handle_speed_initialization(self, config)
-
-        
 
     def update_status_bar_message(self):
         speedText = get_speed_status_text(self.engineSpeed)
@@ -171,7 +168,7 @@ class MainWindow(OpenCVWindow):
 
     def on_close_canvas(self, canvasName):
         self.canvasData[canvasName].action.setChecked(False)
-        #self.canvasData[canvasName].action.setIcon(QIcon(ICON_NONCHECKED))
+        # self.canvasData[canvasName].action.setIcon(QIcon(ICON_NONCHECKED))
 
     def on_canvas_toggle(self):
         action = self.sender()  # Get the QAction that triggered the handler
@@ -180,27 +177,31 @@ class MainWindow(OpenCVWindow):
         canvasName = context["canvasName"]
 
         if action.isChecked():  # If the action is checked (active)
-            #action.setIcon(QIcon(ICON_CHECKED))
+            # action.setIcon(QIcon(ICON_CHECKED))
 
             if canvasName not in self.canvasData:
                 self.canvasData[canvasName] = CanvasWindowData(
                     OpenCVWindow(self, canvasName, settings=self.settings), action
                 )
             else:
-                self.canvasData[canvasName].window = OpenCVWindow(self, canvasName, settings=self.settings)
+                self.canvasData[canvasName].window = OpenCVWindow(
+                    self, canvasName, settings=self.settings
+                )
                 self.canvasData[canvasName].window.update_image(
                     self.canvasData[canvasName].image
                 )
 
             self.canvasData[canvasName].window.show()
         else:
-            #action.setIcon(QIcon(ICON_NONCHECKED))
+            # action.setIcon(QIcon(ICON_NONCHECKED))
             self.canvasData[canvasName].window.close()
             self.canvasData[canvasName].window = None
-    
+
     def add_canvas_entry(self, name):
         key = f"canvas/{name}"
-        visibility = self.settings.value(key, type=bool) if self.settings.contains(key) else True
+        visibility = (
+            self.settings.value(key, type=bool) if self.settings.contains(key) else True
+        )
 
         canvas_action = QAction(name, self)
         canvas_action.setData({"canvasName": name})
@@ -212,17 +213,14 @@ class MainWindow(OpenCVWindow):
             )
             self.canvasData[name].window.show()
         else:
-            self.canvasData[name] = CanvasWindowData(
-                    None, canvas_action
-                )
-             
+            self.canvasData[name] = CanvasWindowData(None, canvas_action)
+
         canvas_action.setChecked(visibility)
-        #canvas_action.setIcon(QIcon(ICON_CHECKED))
+        # canvas_action.setIcon(QIcon(ICON_CHECKED))
 
         canvas_action.triggered.connect(self.on_canvas_toggle)
         self.canvas_menu.addAction(canvas_action)
-    
-    
+
     def on_layer_toggle(self):
         action = self.sender()  # Get the QAction that triggered the handler
         context = action.data()  # Retrieve the context data
@@ -230,10 +228,10 @@ class MainWindow(OpenCVWindow):
         layerName = context["layerName"]
 
         if action.isChecked():  # If the action is checked (active)
-            #action.setIcon(QIcon(ICON_CHECKED))
+            # action.setIcon(QIcon(ICON_CHECKED))
             self.layerData[layerName] = True
         else:
-            #action.setIcon(QIcon(ICON_NONCHECKED))
+            # action.setIcon(QIcon(ICON_NONCHECKED))
             self.layerData[layerName] = False
 
         key = f"layers/{layerName}"
@@ -243,21 +241,21 @@ class MainWindow(OpenCVWindow):
 
     def add_layer_entry(self, name):
         key = f"layers/{name}"
-        visibility = self.settings.value(key, type=bool) if self.settings.contains(key) else True
-        
+        visibility = (
+            self.settings.value(key, type=bool) if self.settings.contains(key) else True
+        )
 
         layer_action = QAction(name, self)
         layer_action.setData({"layerName": name})
         layer_action.setCheckable(True)
         self.layerData[name] = visibility
         layer_action.setChecked(visibility)
-        #layer_action.setIcon(QIcon(ICON_CHECKED))
+        # layer_action.setIcon(QIcon(ICON_CHECKED))
 
         layer_action.triggered.connect(self.on_layer_toggle)
         self.layer_menu.addAction(layer_action)
 
         return visibility
-        
 
 
 app, window = None, None
@@ -275,8 +273,10 @@ def qt_display_canvas(image, name=None):
 def qt_add_canvas_entry(name):
     window.add_canvas_entry(name)
 
+
 def qt_add_layer_entry(name):
     return window.add_layer_entry(name)
+
 
 def qt_get_layer_visibility(name):
     return window.layerData.get(name, True)

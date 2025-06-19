@@ -209,7 +209,7 @@ def process_canvas(kwargs, otherData):
         if mainCanvas is None:
             mainCanvas = canvas
         else:
-            qt_add_canvas_entry(name)
+            qt_add_canvas_entry(name, shape)
 
         galyCanvases[name] = canvas
 
@@ -419,6 +419,6 @@ def process_galy(data):
 
     # Now show all canvases
     for canvasName, canvas in galyCanvases.items():
-        qt_display_canvas(canvas.image, canvasName if canvas != mainCanvas else None)
+        qt_display_canvas(canvas.image, canvasName if canvas != mainCanvas else None, canvas.image.shape)
 
     return remaining_signals

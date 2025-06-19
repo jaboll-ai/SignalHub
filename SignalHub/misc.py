@@ -1,4 +1,4 @@
-def get_nested_key(key, data):
+def get_nested_key(key, data, default=None):
     keys = key.split(".")  # Split the key by dot to handle nested keys
     current_data = data
 
@@ -8,7 +8,7 @@ def get_nested_key(key, data):
             current_data = current_data[sub_key]
         else:
             # If a nested key does not exist, return None or handle error
-            current_data = None
+            current_data = default
             break
 
     return current_data

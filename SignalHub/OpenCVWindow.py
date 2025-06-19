@@ -11,7 +11,7 @@ import numpy as np
 
 
 class OpenCVWindow(QMainWindow):
-    def __init__(self, mainWindow, title, applicationName="SignalHub", settings=None):
+    def __init__(self, mainWindow, title, applicationName="SignalHub", settings=None, shape=None):
         super().__init__()
 
         self.mainWindow = mainWindow
@@ -37,7 +37,9 @@ class OpenCVWindow(QMainWindow):
         else:
             self.settings = settings
 
-        self.targetWidth, self.targetHeight = 1280, 1280
+        if shape is None:
+            shape = (640, 480)
+        self.targetWidth, self.targetHeight = shape[0], shape[1]
         #self.setMinimumSize(400, 300)  # Set a custom minimum size smaller than layout
 
         # Load the window position and size from settings

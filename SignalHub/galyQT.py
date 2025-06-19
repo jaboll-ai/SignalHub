@@ -25,10 +25,11 @@ ICON_NONCHECKED = None
 
 
 class CanvasWindowData:
-    def __init__(self, window, action):
+    def __init__(self, window, action, shape=None):
         self.window = window
         self.action = action
         self.image = None
+        self.shape = shape
 
 
 class MainWindow(OpenCVWindow):
@@ -180,12 +181,17 @@ class MainWindow(OpenCVWindow):
             # action.setIcon(QIcon(ICON_CHECKED))
 
             if canvasName not in self.canvasData:
-                self.canvasData[canvasName] = CanvasWindowData(
-                    OpenCVWindow(self, canvasName, settings=self.settings), action
-                )
+                #self.canvasData[canvasName] = CanvasWindowData(
+                    #OpenCVWindow(self, canvasName, settings=self.settings, shape=shape), action, shape=shape
+                #)
+                assert False, f"Should not happen: canvasData entry missing for {canvasName}"
+                # NOTE: Reasong this should not happen is that i need to pass the target shape (window size) to the OpenCVWindow
+                # I channel the shape from GALY to add_canvas_entry and store it in the canvasData entry
+                # Here, the user toggles the canvas to be visible. Without the shape, the OpenCVWindow cannot be initialized properly
+                # If this has to function, the logic must be changed such that the canvas size is stored differently 
             else:
                 self.canvasData[canvasName].window = OpenCVWindow(
-                    self, canvasName, settings=self.settings
+                    self, canvasName, settings=self.settings, shape=self.canvasData[canvasName].shape
                 )
                 self.canvasData[canvasName].window.update_image(
                     self.canvasData[canvasName].image
@@ -197,7 +203,7 @@ class MainWindow(OpenCVWindow):
             self.canvasData[canvasName].window.close()
             self.canvasData[canvasName].window = None
 
-    def add_canvas_entry(self, name):
+    def add_canvas_entry(self, name, shape=None):
         key = f"canvas/{name}"
         visibility = (
             self.settings.value(key, type=bool) if self.settings.contains(key) else True
@@ -209,11 +215,11 @@ class MainWindow(OpenCVWindow):
 
         if visibility:
             self.canvasData[name] = CanvasWindowData(
-                OpenCVWindow(self, name, settings=self.settings), canvas_action
+                OpenCVWindow(self, name, settings=self.settings, shape=shape), canvas_action, shape=shape
             )
             self.canvasData[name].window.show()
         else:
-            self.canvasData[name] = CanvasWindowData(None, canvas_action)
+            self.canvasData[name] = CanvasWindowData(None, canvas_action, shape=shape)
 
         canvas_action.setChecked(visibility)
         # canvas_action.setIcon(QIcon(ICON_CHECKED))
@@ -265,17 +271,18 @@ class MainWindow(OpenCVWindow):
 app, window = None, None
 
 
-def qt_display_canvas(image, name=None):
+def qt_display_canvas(image, name=None, shape=None):
     global window
 
     if name is not None:
         window.display_canvas(name, image)
     else:
+        window.targetWidth, window.targetHeight = shape[0], shape[1]
         window.update_image(image)
 
 
-def qt_add_canvas_entry(name):
-    window.add_canvas_entry(name)
+def qt_add_canvas_entry(name, shape):
+    window.add_canvas_entry(name, shape)
 
 
 def qt_add_layer_entry(name, alwaysVisible):

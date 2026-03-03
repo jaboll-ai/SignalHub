@@ -59,7 +59,7 @@ class GALY:
 
         self.commands.append(GALYBuffer(GALYCommand.BLIT, source=source, offset=offset))
 
-    def canvas(self, name, shape, color):
+    def canvas(self, name, shape, color, dtype=np.float64):
         assert type(name) == str, "Name must be a string"
 
         assert type(shape) == tuple, "Shape must be a tuple (W, H)"
@@ -68,15 +68,17 @@ class GALY:
         assert type(color) == tuple, "Color must be a tuple (R, G, B)"
         assert len(color) == 3, "Color must be a tuple (R, G, B)"
 
+        assert dtype in (np.uint8, np.float32, np.float64), "dtype must be np.uint8, np.float32 or np.float64"
+
         self.commands.append(
-            GALYBuffer(GALYCommand.CANVAS, name=name, shape=shape, color=color)
+            GALYBuffer(GALYCommand.CANVAS, name=name, shape=shape, color=color, dtype=dtype)
         )
 
     def circle(self, org, radius, color, thickness=1, **kwargs):
         if type(org) == tuple or type(org) == list:
             org = np.array([[org[0], org[1]]])
 
-          
+
 
         assert type(org) == np.ndarray, "Origin must be a numpy array"
         org = org.reshape(1, -1)
@@ -179,8 +181,8 @@ class GALY:
 
 
 class GALYCanvas:
-    def __init__(self, shape, color):
-        self.image = np.zeros((shape[0], shape[1], 3))
+    def __init__(self, shape, color, dtype):
+        self.image = np.zeros((shape[0], shape[1], 3), dtype=dtype)
         self.color = color
 
     def reset(self):
@@ -196,13 +198,12 @@ galyCanvases = {}
 def process_canvas(kwargs, otherData):
     global currentCanvas, galyCanvases, mainCanvas
 
-    name, shape, color = kwargs["name"], kwargs["shape"], kwargs["color"]
-
+    name, shape, color, dtype = kwargs["name"], kwargs["shape"], kwargs["color"], kwargs["dtype"]
     if name in galyCanvases:
         currentCanvas = galyCanvases[name]
     else:
         shape = (shape[1], shape[0], 3)
-        canvas = GALYCanvas(shape, color)
+        canvas = GALYCanvas(shape, color, dtype)
         canvas.reset()
         currentCanvas = canvas
 
@@ -224,13 +225,12 @@ def apply_layer_mapping(pt):
     if currentLayer in layerMappings.keys():
         if type(pt) is np.ndarray:
             pt = pt.reshape(-1)
-            
+
         mapping = layerMappings[currentLayer]
         pt = np.float64(np.array([[pt[0], pt[1], 1.0]]).T)
         #print(mapping.dtype, pt.dtype)
-
         pt = mapping @ pt
-
+    pt = pt.ravel()
     return (int(np.round(pt[0])), int(np.round(pt[1])))
 
 
@@ -419,6 +419,8 @@ def process_galy(data):
 
     # Now show all canvases
     for canvasName, canvas in galyCanvases.items():
-        qt_display_canvas(canvas.image, canvasName if canvas != mainCanvas else None, canvas.image.shape)
+        shape = canvas.image.shape
+        W, H = shape[1], shape[0]
+        qt_display_canvas(canvas.image, canvasName if canvas != mainCanvas else None, (W, H))
 
     return remaining_signals

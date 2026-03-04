@@ -10,8 +10,8 @@ if not t.parent.exists():
 if t.exists():
     train, lengths, labels = pickle.loads(t.read_bytes())
     t.with_suffix(".old").unlink(missing_ok=True)
-    t.rename(t.with_suffix(".old"))
 else:
+    print("Creating new train file")
     train= np.empty((0, 2))
     lengths = []
     labels = []
@@ -41,12 +41,13 @@ while raw["preprocessor"]:
 
 normalized = [[p["preprocessor"] for p in d] for d in data]
 current_lengths = [len(d) for d in normalized]
-assert int(input("How many times did you do it? >> ")) == len(current_lengths), "Invalid length"
+assert int(input("How many times did you do it? >> ")) == len(current_lengths), f"Invalid length i saw {len(current_lengths)}"
 current_labels = [input("Label: >> ")] * len(current_lengths)
 current_train = np.vstack(normalized)
 
 train=np.vstack((train, current_train))
 lengths.extend(current_lengths)
 labels.extend(current_labels)
+t.rename(t.with_suffix(".old"))
 t.write_bytes(pickle.dumps((train, lengths, labels)))
 

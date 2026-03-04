@@ -1,12 +1,12 @@
 engine:
   speed: 4
-  autoclose: True
+  autoclose: False
 recorder:
   file: record/test.pickle
   record:
     - preprocessor
 webcam:
-  deviceIndex: 1
+  deviceIndex: 2
   width: 800
   height: 450
   dtype: u8

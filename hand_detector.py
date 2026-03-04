@@ -71,8 +71,8 @@ class HandDetector(Module):
         galy.canvas("Main", (0,0), (0.0, 0.0, 0.0))
         galy.layer("Hands")
         galy.set_layer_affine_mapping(np.array([
-            [arr.shape[1],     0.0,     0.0],
-            [     0.0,    arr.shape[0], 0.0]
+            [get_nested_key("config.webcam.width", data), 0.0, 0.0],
+            [0.0, get_nested_key("config.webcam.height", data), 0.0]
         ]))
         for idx in range(len(hand_landmarks_list)): # 1 or 2 Hands
             hand_landmarks = hand_landmarks_list[idx]

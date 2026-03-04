@@ -41,7 +41,7 @@ class HMMBasedRecognition():
             X_l, lengths_l = separated_data[label]
 
             model = hmm.GaussianHMM(
-                n_components=5,
+                n_components=8,
                 covariance_type="diag",
                 n_iter=200,
                 random_state=42,
@@ -105,5 +105,5 @@ if __name__ == "__main__":
         disp.plot()
         plt.show()
 
-    # train()
+    train()
     evaluate()

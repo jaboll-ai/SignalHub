@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from re import sub
 import jsonschema
 import jsonschema.validators
@@ -24,7 +25,7 @@ def make_unique(name):
         return name + f"_{module_name_counter[name]}"
 
 
-class Module:
+class Module(ABC):
     def __init__(self, inputSignals=None, outputSchema=None, name=None):
         self._name = make_unique(name or self.__class__.__name__)
 
@@ -57,12 +58,14 @@ class Module:
             return False
 
         return True
-
+    @abstractmethod
     def start(self, data):
         return {}
 
+    @abstractmethod
     def step(self, data):
         return {}
 
+    @abstractmethod
     def stop(self, data):
         return {}

@@ -14,6 +14,9 @@ import numpy as np
 import argparse
 import cv2
 
+from hand_detector import HandDetector
+from hiddenmarkov import Preprocessor, HMMModule
+
 
 class TerminateAfter(Module):
     def __init__(self, count):
@@ -119,8 +122,7 @@ parser.add_argument("--mode", action="store", default="none")
 parser.add_argument("--recorder.file", action="store")
 parser.add_argument("--engine.singlestep", action="store_true", default=False)
 parser.add_argument("--webcam.width", required=False)
-modules = [ConfigParser(parser), Clock(), TerminateAfter(100)]
-
+modules = [ConfigParser(parser), Webcam(), HandDetector(), Preprocessor(), HMMModule(), TerminateAfter(600)]
 
 engine = Engine(modules=modules, signals={})
 signals = engine.run({})

@@ -8,6 +8,7 @@ class HMMBasedRecognition():
     def __init__(self):
         self.models = {}
 
+    @classmethod
     def _extract_sequence(self, X, lengths):
         assert sum(lengths) == len(X), "Invalid dimensions"
         sequences = []
@@ -18,6 +19,7 @@ class HMMBasedRecognition():
             start = end
         return sequences
 
+    @classmethod
     def _separate_data(self, X, lengths, labels):
         assert len(lengths) == len(labels), "Invalid dimensions"
         sequences = self._extract_sequence(X, lengths)
@@ -41,10 +43,11 @@ class HMMBasedRecognition():
             X_l, lengths_l = separated_data[label]
 
             model = hmm.GaussianHMM(
-                n_components=8,
+                n_components=3,
                 covariance_type="diag",
                 n_iter=200,
                 random_state=42,
+                # min_covar=1e-4
             )
 
             self.models[label] = model.fit(X_l, lengths_l)
@@ -88,6 +91,7 @@ class HMMBasedRecognition():
 if __name__ == "__main__":
     p = Path("data/train/train.pkl")
     X_train, lengths, labels = pickle.loads(p.read_bytes())
+
     def train():
         mm = HMMBasedRecognition()
         mm.fit(X_train, lengths, labels)
@@ -107,3 +111,4 @@ if __name__ == "__main__":
 
     train()
     evaluate()
+

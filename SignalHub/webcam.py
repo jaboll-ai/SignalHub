@@ -42,7 +42,8 @@ class Webcam(Module):
 
         # Rescale to target size
         image = cv2.resize(frame, shape)
-
+        if get_nested_key("config.webcam.flip", data):
+            image = cv2.flip(image, 1)
         # Make it float32 if requested
         if dtype == "float32" or dtype == "f32":
             image = np.float32(image / 255.0)

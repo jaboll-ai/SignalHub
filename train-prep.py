@@ -12,7 +12,7 @@ if t.exists():
     t.with_suffix(".old").unlink(missing_ok=True)
 else:
     print("Creating new train file")
-    train= np.empty((0, 2))
+    train= np.empty((0, 5))
     lengths = []
     labels = []
 assert len(lengths) == len(labels) and sum(lengths) == len(train), "Invalid dimensions"
@@ -23,20 +23,20 @@ while raw["preprocessor"]:
     sub = []
     while raw["preprocessor"]:
         d = raw["preprocessor"].pop(0)
-        if d is None: d = []
+        if d is None or d.get("preprocessor") is None: d = []
         if len(d) > 0: break
     if len(d) > 0:
         sub.append(d)
     lost = 0
     while raw["preprocessor"]:
         d = raw["preprocessor"].pop(0)
-        if d is None: d = []
+        if d is None or d.get("preprocessor") is None: d = []
         if len(d) <= 0:
             lost += 1
             if lost > 20: break
         else:
             sub.append(d)
-    if len(sub) > 0:
+    if len(sub) > 10:
         data.append(sub)
 
 normalized = [[p["preprocessor"] for p in d] for d in data]
@@ -48,6 +48,7 @@ current_train = np.vstack(normalized)
 train=np.vstack((train, current_train))
 lengths.extend(current_lengths)
 labels.extend(current_labels)
-t.rename(t.with_suffix(".old"))
+if t.exists():
+    t.rename(t.with_suffix(".old"))
 t.write_bytes(pickle.dumps((train, lengths, labels)))
 

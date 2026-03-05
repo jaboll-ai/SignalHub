@@ -7,6 +7,13 @@ recorder:
     - preprocessor
 webcam:
   deviceIndex: 2
-  width: 800
-  height: 450
+  width: 640
+  height: 480
   dtype: u8
+  flip: True
+preprocessor:
+  finger_idx: 8
+markov:
+  buffer_size: 70
+  max_lost: 15
+  min_steps: 15

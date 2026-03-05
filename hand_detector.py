@@ -83,3 +83,4 @@ class HandDetector(Module):
 
     def stop(self, data):
         pass
+

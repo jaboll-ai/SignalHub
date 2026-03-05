@@ -1,4 +1,5 @@
 from collections import defaultdict
+import itertools
 from pathlib import Path
 import pickle
 from hmmlearn import hmm
@@ -109,6 +110,32 @@ if __name__ == "__main__":
         disp.plot()
         plt.show()
 
+    def test(label="A"):
+        p = Path("data")
+        X_directions = {}
+        for f in p.glob("*.csv"):
+            arr = np.genfromtxt(f, delimiter=",")
+            X_directions[f.stem] = arr
+        mm = HMMBasedRecognition.load(Path("data/hmm.pkl"))
+        idx = mm.classes_.index(label)
+        seqs = []
+        scores = []
+        i = 0
+        repeat=5
+        for seq in itertools.product(X_directions.keys(), repeat=5):
+            seqs.append(seq)
+            motion = np.vstack([X_directions[c] for c in seq])
+            score = mm.decision_function(motion)
+            scores.append(score[0][idx])
+            i += 1
+            if i % 1000 == 0:
+                print(i)
+        scores = np.array(scores)
+        idx = scores.argmax()
+        print(seqs[idx])
+        print(scores[idx])
+
     train()
     evaluate()
+    # test()
 

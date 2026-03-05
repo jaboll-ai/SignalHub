@@ -5,6 +5,7 @@ import numpy as np
 f = Path("record/test.pickle")
 assert f.exists(), "Record file does not exist"
 t = Path("data/train/train.pkl")
+# t = Path("data/viz.pkl")
 if not t.parent.exists():
     t.parent.mkdir(exist_ok=True, parents=True)
 if t.exists():

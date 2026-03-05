@@ -22,6 +22,7 @@ import pickle
 import random
 import numpy as np
 from HMMBasedRecognition import HMMBasedRecognition
+import json
 
 def load_train(p: Path):
     X_train, lengths, labels = pickle.loads(p.read_bytes())
@@ -67,9 +68,13 @@ def compare(p: Path, label: list[str]):
 
 
 if __name__ == "__main__":
-    p = Path("data/train/train.pkl")
-    pog = Path("data/train/isok.pkl")
+    # p = Path("data/train/train.pkl")
+    p = Path("data/viz.pkl")
+    # pog = Path("data/train/isok.pkl")
     np.set_printoptions(suppress=True)
+    sep = load_train(p)
+    for k in sep:
+        np.savetxt(f"data/{k}.csv", sep[k][0], delimiter=",", fmt="%.7f")
     # X_train, lengths, labels = pickle.loads(p.read_bytes())
     # X, l, l_ = pickle.loads(pog.read_bytes())
     # X_train[:,-1] = X_train[:,-1] / 10_000

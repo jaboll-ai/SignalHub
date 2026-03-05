@@ -79,19 +79,6 @@ class HMMModule(Module):
         return {}
 
     def step(self, data):
-        """
-        Process the preprocessor data and make a decision based on the Hidden Markov Model (HMM).
-
-        Parameters
-        ----------
-        data : dict
-            A dictionary containing the preprocessor data.
-
-        Returns
-        -------
-        dict
-            A dictionary containing the result of the HMM decision and the GALY display information.
-        """
         if data["preprocessor"] is None:
             self.lost += 1
             if self.lost > self.max_lost:

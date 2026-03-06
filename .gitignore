@@ -1,4 +1,9 @@
-SignalHub/__pycache__
-modules/__pycache__
-record
-*.pickle
+__pycache__/
+*.pyc
+.venv/
+.env
+data/
+record/
+build/
+dist/
+*.egg-info

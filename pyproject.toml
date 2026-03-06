@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SignalHub"
+version = "0.1.0"
+description = "Signal flow library for student projects"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "Prof. Dr. Dennis Müller" }
+]
+
+dependencies = [
+    "attrs",
+    "jsonschema",
+    "jsonschema-specifications",
+    "numpy",
+    "opencv-python",
+    "psutil",
+    "PyQt5",
+    "PyYAML",
+    "referencing",
+    "rpds-py",
+    "typing_extensions"
+]
+
+[tool.setuptools]
+packages = ["SignalHub"]

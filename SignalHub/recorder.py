@@ -38,8 +38,6 @@ class Replay(Module):
             with open(fileName, "rb") as f:
                 global_ledger = pickle.load(f)
 
-        open_recorder.append(self)
-
         if self.moduleName not in global_ledger:
             logger.critical(
                 f"Cannot replay module {self.child._name} as it was not serialized into provided file."

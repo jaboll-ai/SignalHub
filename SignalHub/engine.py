@@ -95,23 +95,10 @@ class Engine:
 
         mode = get_nested_key("config.mode", data) or None
 
-        if mode == "record":
-            record_list = get_nested_key("config.recorder.record", data)
-            wrapped_modules = []
-            for module in self.modules:
-                if module._name in record_list:
-                    print(f"Wrapping {module._name} with recorder")
-                    wrapped_modules.append(Recorder(module))
-                else:
-                    wrapped_modules.append(module)
-
-            self.modules = wrapped_modules
-
-        if mode == "replay":
+        if "replay" in mode:
             record_list = get_nested_key("config.recorder.replay", data)
             if record_list is None:
                 record_list = get_nested_key("config.recorder.record", data)
-
             wrapped_modules = []
             for module in self.modules:
                 if module._name in record_list:
@@ -121,6 +108,20 @@ class Engine:
                     wrapped_modules.append(module)
 
             self.modules = wrapped_modules
+
+        if "record" in mode:
+            record_list = get_nested_key("config.recorder.record", data)
+            wrapped_modules = []
+            for module in self.modules:
+                name = module.child._name if isinstance(module, Replay) else module._name
+                if name in record_list:
+                    print(f"Wrapping {module._name} with recorder")
+                    wrapped_modules.append(Recorder(module))
+                else:
+                    wrapped_modules.append(module)
+
+            self.modules = wrapped_modules
+
 
     def run(self, data):
         # Wrap modules with recorder or replay modules depending on mode
